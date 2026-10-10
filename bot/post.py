@@ -5,17 +5,21 @@ Flujo:
   1. Elige un tema del día (rota por día del año, sin repetir el de ayer).
   2. Lee las tasas reales del día: de COTIZADOS_API_URL si existe, o abriendo
      /cotizaciones en un navegador sin interfaz (la página carga los datos con JavaScript).
-  3. Genera el texto con Claude, evitando repetir los últimos posts.
+  3. Genera el texto con IA (Gemini o Claude), evitando repetir los últimos posts.
   4. Publica en Threads (crear contenedor -> esperar -> publicar).
   5. Guarda el historial y, una vez por semana, renueva el token de Threads.
 
 Variables de entorno:
   THREADS_ACCESS_TOKEN  (obligatoria) token de larga duración de Threads
-  ANTHROPIC_API_KEY     (obligatoria) clave de la API de Claude
+  GEMINI_API_KEY        (obligatoria*) clave de Google AI Studio; se usa si existe
+  ANTHROPIC_API_KEY     (alternativa*) clave de la API de Claude (si no hay GEMINI_API_KEY)
   COTIZADOS_API_URL     (opcional)    endpoint JSON con las tasas (si no, se lee la página)
+  GEMINI_MODEL          (opcional)    por defecto gemini-3.5-flash-lite
   CLAUDE_MODEL          (opcional)    por defecto claude-haiku-5-5
   DRY_RUN=true          (opcional)    genera el post pero no lo publica
   FORCE_REFRESH=true    (opcional)    fuerza la renovación del token
+
+  * Hace falta al menos una de las dos claves de IA.
 """
 
 import datetime as dt
@@ -27,7 +31,6 @@ import sys
 import time
 
 import requests
-from anthropic import Anthropic
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HISTORY_FILE = ROOT / "data" / "history.json"
@@ -38,7 +41,9 @@ TZ_VE = dt.timezone(dt.timedelta(hours=-4))
 
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
 FORCE_REFRESH = os.getenv("FORCE_REFRESH", "false").lower() == "true"
-MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-5-5")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL") or "gemini-3.5-flash-lite"
+CLAUDE_MODEL = os.getenv("CLAUDE_MODEL") or "claude-haiku-5-5"
+PROVIDER = "gemini" if os.getenv("GEMINI_API_KEY") else "claude"
 
 # Cada tema define el ángulo del post y el enlace al que debe llevar.
 TEMAS = [
@@ -184,8 +189,49 @@ def fetch_real_data() -> str | None:
     return None
 
 
+def ask_gemini(system: str, user_msg: str) -> str:
+    """Llama a la API de Gemini (Google AI Studio) por REST."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+    body = {
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": user_msg}]}],
+        "generationConfig": {"temperature": 0.9, "maxOutputTokens": 2048},
+    }
+    for intento in range(3):
+        r = requests.post(
+            url, json=body, timeout=60,
+            headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
+        )
+        # 429 = límite de la capa gratuita; 5xx = error temporal de Google.
+        if r.status_code in (429, 500, 503) and intento < 2:
+            log(f"Gemini respondió {r.status_code}, reintentando...")
+            time.sleep(20 * (intento + 1))
+            continue
+        if not r.ok:
+            raise RuntimeError(f"Gemini API {r.status_code}: {r.text}")
+        data = r.json()
+        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+        text = "".join(p.get("text", "") for p in parts if not p.get("thought"))
+        if text.strip():
+            return text
+        raise RuntimeError(f"Gemini no devolvió texto: {json.dumps(data)[:500]}")
+    raise RuntimeError("Gemini no respondió.")
+
+
+def ask_claude(system: str, user_msg: str) -> str:
+    from anthropic import Anthropic
+
+    resp = Anthropic().messages.create(
+        model=CLAUDE_MODEL,
+        max_tokens=500,
+        system=system,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+    return "".join(b.text for b in resp.content if b.type == "text")
+
+
 def generate_post(topic: dict, history: list, real_data: str | None) -> str:
-    client = Anthropic()
+    ask = ask_gemini if PROVIDER == "gemini" else ask_claude
     recientes = "\n---\n".join(h["texto"] for h in history[-10:]) or "(ninguno todavía)"
     hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y")
 
@@ -198,13 +244,7 @@ def generate_post(topic: dict, history: list, real_data: str | None) -> str:
     )
 
     for intento in range(3):
-        resp = client.messages.create(
-            model=MODEL,
-            max_tokens=500,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_msg}],
-        )
-        text = "".join(b.text for b in resp.content if b.type == "text").strip().strip('"')
+        text = ask(SYSTEM_PROMPT, user_msg).strip().strip('"')
         if topic["link"] not in text:
             text = f"{text}\n\n{topic['link']}"
         if len(text) <= THREADS_MAX_CHARS:
@@ -276,9 +316,10 @@ def main() -> int:
     if not token and not DRY_RUN:
         log("Falta THREADS_ACCESS_TOKEN.")
         return 1
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        log("Falta ANTHROPIC_API_KEY.")
+    if not (os.getenv("GEMINI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")):
+        log("Falta GEMINI_API_KEY (o ANTHROPIC_API_KEY).")
         return 1
+    log(f"IA: {PROVIDER} ({GEMINI_MODEL if PROVIDER == 'gemini' else CLAUDE_MODEL})")
 
     history = load_history()
     topic = pick_topic(history)
