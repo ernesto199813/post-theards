@@ -1,0 +1,76 @@
+name: Post diario en Threads
+
+on:
+  schedule:
+    # 12:47 UTC = 8:47 a. m. hora de Venezuela (UTC-4)
+    - cron: "47 12 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Solo generar el post, sin publicar"
+        type: boolean
+        default: true
+      force_refresh:
+        description: "Forzar renovación del token de Threads"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # para guardar data/history.json
+
+concurrency:
+  group: threads-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias y Chromium
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Generar y publicar
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          COTIZADOS_API_URL: ${{ vars.COTIZADOS_API_URL }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          FORCE_REFRESH: ${{ github.event_name == 'workflow_dispatch' && inputs.force_refresh || 'false' }}
+        run: python bot/post.py
+
+      - name: Guardar token renovado
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ ! -f "$RUNNER_TEMP/new_token" ]; then
+            echo "No hubo renovación de token en esta ejecución."
+            exit 0
+          fi
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::Falta el secreto GH_PAT: el token renovado no se pudo guardar."
+            exit 0
+          fi
+          gh secret set THREADS_ACCESS_TOKEN --repo "$GITHUB_REPOSITORY" < "$RUNNER_TEMP/new_token"
+          rm -f "$RUNNER_TEMP/new_token"
+          echo "Secreto THREADS_ACCESS_TOKEN actualizado."
+
+      - name: Guardar historial
+        run: |
+          if [ -n "$(git status --porcelain data/)" ]; then
+            git config user.name "cotizados-bot"
+            git config user.email "cotizados-bot@users.noreply.github.com"
+            git add data/history.json
+            git commit -m "chore: post diario $(date -u +%F)"
+            git push
+          fi
