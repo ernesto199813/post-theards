@@ -1,7 +1,7 @@
 # Bot diario de Threads — Cotizados
 
 Publica todos los días a las **8:47 a. m. (hora de Venezuela)** un post en Threads promocionando
-[cotizados.vercel.app](https://cotizados.vercel.app). El texto lo redacta la IA (Gemini por defecto), rotando 8 temas
+[cotizados.vercel.app](https://cotizados.vercel.app). El texto lo redacta Gemini, rotando 8 temas
 (tasa BCV, calculadora, BCV vs USDT, noticias, comunidad, app móvil, tips, comerciantes) y sin
 repetir los últimos posts. Corre gratis en GitHub Actions.
 
@@ -35,15 +35,11 @@ Crea una clave en <https://aistudio.google.com/apikey> → **Create API key**. L
 alcanza de sobra para un post al día. El modelo por defecto es `gemini-3.5-flash-lite`; puedes
 cambiarlo con la variable `GEMINI_MODEL`.
 
-**Alternativa: Claude.** Si prefieres Claude, crea una API key en <https://console.anthropic.com>
-→ **API Keys** y guárdala como `ANTHROPIC_API_KEY`. El bot usa Gemini siempre que exista
-`GEMINI_API_KEY`; si no existe, usa Claude.
-
 ## 3. Subir el repo y configurar secretos
 
 ```bash
 git init && git add . && git commit -m "Bot de Threads para Cotizados"
-gh repo create cotizados-threads-bot --private --source=. --push
+gh repo create cotizados-threads-bot --public --source=. --push
 ```
 
 En **Settings → Secrets and variables → Actions**:
@@ -52,11 +48,9 @@ En **Settings → Secrets and variables → Actions**:
 |----------|------------------------|-------|
 | Secret   | `THREADS_ACCESS_TOKEN` | token de 60 días del paso 1 |
 | Secret   | `GEMINI_API_KEY`       | clave de Google AI Studio del paso 2 |
-| Secret   | `ANTHROPIC_API_KEY`    | *(opcional)* clave de Claude, solo si no usas Gemini |
 | Secret   | `GH_PAT`               | token *fine-grained* de GitHub con permiso **Secrets: Read and write** sobre este repo (permite renovar solo el token de Threads) |
 | Variable | `COTIZADOS_API_URL`    | *(opcional)* endpoint JSON con las tasas; si no existe, el bot lee la página `/cotizaciones` |
 | Variable | `GEMINI_MODEL`         | *(opcional)* por defecto `gemini-3.5-flash-lite` |
-| Variable | `CLAUDE_MODEL`         | *(opcional)* por defecto `claude-haiku-5-5` |
 
 ## 4. Probar
 
@@ -67,17 +61,24 @@ Local:
 ```bash
 pip install -r requirements.txt
 python -m playwright install chromium
-export GEMINI_API_KEY=... THREADS_ACCESS_TOKEN=...
-DRY_RUN=true python bot/post.py
+# Rellena el archivo .env de la raíz (GEMINI_API_KEY, THREADS_ACCESS_TOKEN, DRY_RUN=true)
+python bot/post.py
 ```
 
 ## Cómo funciona
 
 - **Datos reales:** cada día el bot abre `/cotizaciones` en un Chromium sin interfaz, espera a que
-  el JavaScript cargue las tasas y le pasa ese texto a la IA (Gemini por defecto), que cita 1 o 2 cifras tal cual
+  el JavaScript cargue las tasas y le pasa ese texto a Gemini, que cita 1 o 2 cifras tal cual
   aparecen (BCV, USDT). Si defines `COTIZADOS_API_URL`, usa ese JSON en vez de la página (más
   rápido y estable). Si no logra leer cifras, publica igual pero sin números: nunca los inventa.
   El log de cada ejecución muestra el texto leído, para que verifiques que es correcto.
+- **Imagen de tasas:** el bot captura la tarjeta "Brecha Cambiaria" de `/cotizaciones` (fecha,
+  BCV y Binance P2P), la guarda en `public/tasas.png`, la sube al repo y le pasa a Threads su URL
+  de `raw.githubusercontent.com`. Por eso **el repo debe ser público** (las claves siguen en los
+  secretos). Si la imagen falla, el post se publica solo con texto.
+- **Enlace en la respuesta:** el post principal sale sin enlace (Threads suele dar menos
+  alcance a los posts con enlaces externos) y justo después el bot responde a su propio post con
+  el enlace de la sección. Los textos de esa respuesta están en `REPLY_TEMPLATES`.
 - **Token:** cada lunes el bot renueva el token de Threads (dura 60 días) y lo guarda solo en el
   secreto usando `GH_PAT`. Si falta `GH_PAT`, verás un aviso y tendrás que renovarlo a mano.
 - **Historial:** `data/history.json` guarda los últimos 60 posts; se commitea tras cada publicación.

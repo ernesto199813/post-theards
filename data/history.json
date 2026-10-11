@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "fecha": "2026-10-10T03:17-04:00",
+    "tema": "noticias",
+    "post_id": "18132064198685914",
+    "texto": "¿Pendiente con cómo va la economía este fin de semana? \n\nRevisa las noticias económicas y el dólar bien al día en https://cotizados.vercel.app/noticias 📉🇻🇪"
+  },
+  {
+    "fecha": "2026-10-10T03:17-04:00",
+    "tema": "comunidad",
+    "post_id": "17945416782350993",
+    "texto": "¿Qué le agregarías o le quitarías a Cotizados para que te sea más útil en el día a día? \n\nBCV Oficial: 876,80 Bs | Binance P2P: 1.017,29 Bs. \n\nDéjanos tus comentarios y sugerencias aquí: https://cotizados.vercel.app/comentarios 📉🇻🇪"
+  }
+]

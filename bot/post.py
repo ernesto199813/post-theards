@@ -5,47 +5,73 @@ Flujo:
   1. Elige un tema del día (rota por día del año, sin repetir el de ayer).
   2. Lee las tasas reales del día: de COTIZADOS_API_URL si existe, o abriendo
      /cotizaciones en un navegador sin interfaz (la página carga los datos con JavaScript).
-  3. Genera el texto con IA (Gemini o Claude), evitando repetir los últimos posts.
-  4. Publica en Threads (crear contenedor -> esperar -> publicar).
-  5. Guarda el historial y, una vez por semana, renueva el token de Threads.
+  3. Genera el texto con Gemini (Google AI Studio), evitando repetir los últimos posts.
+  4. Captura la tarjeta de tasas de /cotizaciones como imagen en public/tasas.png y la sube al
+     repo (debe ser público) para que Threads la descargue. Si falla, el post va sin imagen.
+  5. Publica en Threads (crear contenedor -> esperar -> publicar) y responde al propio
+     post con el enlace (los posts sin enlace externo suelen tener más alcance).
+  6. Guarda el historial y, una vez por semana, renueva el token de Threads.
 
 Variables de entorno:
   THREADS_ACCESS_TOKEN  (obligatoria) token de larga duración de Threads
-  GEMINI_API_KEY        (obligatoria*) clave de Google AI Studio; se usa si existe
-  ANTHROPIC_API_KEY     (alternativa*) clave de la API de Claude (si no hay GEMINI_API_KEY)
+  GEMINI_API_KEY        (obligatoria) clave de Google AI Studio
   COTIZADOS_API_URL     (opcional)    endpoint JSON con las tasas (si no, se lee la página)
   GEMINI_MODEL          (opcional)    por defecto gemini-3.5-flash-lite
-  CLAUDE_MODEL          (opcional)    por defecto claude-haiku-5-5
   DRY_RUN=true          (opcional)    genera el post pero no lo publica
   FORCE_REFRESH=true    (opcional)    fuerza la renovación del token
 
-  * Hace falta al menos una de las dos claves de IA.
+  En local se pueden poner en un archivo .env en la raíz del repo (no se sube a GitHub).
 """
 
 import datetime as dt
 import json
 import os
 import pathlib
+import random
 import re
+import subprocess
 import sys
 import time
 
 import requests
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+
+def load_dotenv(path: pathlib.Path) -> None:
+    """Carga un archivo .env (para pruebas locales) sin pisar variables ya definidas."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        value = value.strip().strip('"').strip("'")
+        if value:
+            os.environ.setdefault(key.strip(), value)
+
+
+load_dotenv(ROOT / ".env")
 HISTORY_FILE = ROOT / "data" / "history.json"
+IMAGE_FILE = ROOT / "public" / "tasas.png"
 SITE = "https://cotizados.vercel.app"
 GRAPH = "https://graph.threads.net/v1.0"
 THREADS_MAX_CHARS = 500
+# Texto de la respuesta con el enlace; se elige uno al azar para no repetir siempre lo mismo.
+REPLY_TEMPLATES = [
+    "Aquí lo tienes 👉 {link}",
+    "Te dejo el enlace: {link}",
+    "Pruébalo aquí 👇\n{link}",
+    "Entra aquí: {link}",
+]
 TZ_VE = dt.timezone(dt.timedelta(hours=-4))
 
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
 FORCE_REFRESH = os.getenv("FORCE_REFRESH", "false").lower() == "true"
 GEMINI_MODEL = os.getenv("GEMINI_MODEL") or "gemini-3.5-flash-lite"
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL") or "claude-haiku-5-5"
-PROVIDER = "gemini" if os.getenv("GEMINI_API_KEY") else "claude"
 
-# Cada tema define el ángulo del post y el enlace al que debe llevar.
+# Cada tema define el ángulo del post y el enlace que se publica en la respuesta.
 TEMAS = [
     {
         "id": "tasa_bcv",
@@ -97,9 +123,10 @@ Escribes UN post para Threads en español de Venezuela, natural y cercano (sin s
 corporativo).
 
 Reglas estrictas:
-- Máximo 450 caracteres en total, enlace incluido.
+- Máximo 450 caracteres en total.
 - Empieza con un gancho en la primera línea (pregunta, dato o situación cotidiana).
-- Incluye el enlace exactamente como se te da, una sola vez.
+- NO incluyas ningún enlace ni URL: el enlace se publica aparte, en una respuesta al post.
+  Puedes cerrar invitando a ver el enlace "aquí abajo" o "en la respuesta".
 - Máximo 1-2 emojis y máximo 2 hashtags (por ejemplo #DólarBCV #Venezuela), o ninguno.
 - "Datos reales del día" es el texto de la página de cotizaciones de Cotizados. Si trae tasas,
   aprovéchalas: cita 1 o 2 cifras (por ejemplo BCV y USDT) copiándolas exactamente como aparecen,
@@ -175,6 +202,68 @@ def fetch_from_page() -> str | None:
     return clean[:2500] if re.search(r"\d+[.,]\d{2}", clean) else None
 
 
+def capture_rates_image() -> pathlib.Path | None:
+    """Captura la tarjeta "Brecha Cambiaria" de /cotizaciones (fecha, BCV y Binance P2P)
+    como PNG en public/tasas.png (se sobrescribe cada día)."""
+    from playwright.sync_api import sync_playwright
+
+    out = IMAGE_FILE
+    out.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page(
+                locale="es-VE", viewport={"width": 430, "height": 932},
+                device_scale_factor=2, color_scheme="dark",
+            )
+            page.goto(f"{SITE}/cotizaciones", wait_until="networkidle", timeout=45000)
+            page.wait_for_function(
+                r"() => /\d+[.,]\d{2}/.test(document.body.innerText)", timeout=20000
+            )
+            page.wait_for_timeout(1500)  # deja terminar las animaciones de las cifras
+            # Desde el aviso "Actualizado: ..." hasta el final de la primera tarjeta.
+            bottom = page.evaluate(
+                "() => { const c = document.querySelector('main [class*=\"rounded-[28px]\"]');"
+                " return c ? c.getBoundingClientRect().bottom : 480; }"
+            )
+            page.screenshot(path=str(out), clip={"x": 0, "y": 0, "width": 430, "height": bottom + 20})
+            browser.close()
+        log(f"Imagen de tasas generada: {out}")
+        return out
+    except Exception as e:  # noqa: BLE001
+        log(f"Aviso: no se pudo generar la imagen de tasas ({e}).")
+        return None
+
+
+def git(*args: str) -> str:
+    return subprocess.run(
+        ["git", "-c", "user.name=cotizados-bot",
+         "-c", "user.email=cotizados-bot@users.noreply.github.com", *args],
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    ).stdout.strip()
+
+
+def publish_image(path: pathlib.Path) -> str:
+    """Sube la imagen al repo (public/tasas.png) y devuelve su URL pública en
+    raw.githubusercontent.com: la API de Threads solo acepta imágenes desde una URL.
+    Requiere que el repo sea público. La URL lleva el commit para evitar la caché de GitHub."""
+    rel = path.relative_to(ROOT).as_posix()
+    git("add", rel)
+    git("commit", "-m", f"chore: imagen de tasas {dt.datetime.now(TZ_VE):%F}", "--", rel)
+    git("push")
+    sha = git("rev-parse", "HEAD")
+    repo = os.getenv("GITHUB_REPOSITORY") or re.sub(
+        r"^.*github\.com[:/]|\.git$", "", git("remote", "get-url", "origin")
+    )
+    url = f"https://raw.githubusercontent.com/{repo}/{sha}/{rel}"
+    # Espera a que GitHub sirva el archivo antes de pasárselo a Threads.
+    for _ in range(12):
+        if requests.head(url, timeout=15).status_code == 200:
+            return url
+        time.sleep(5)
+    raise RuntimeError(f"la imagen no está accesible en {url} (¿el repo es público?)")
+
+
 def fetch_real_data() -> str | None:
     """Tasas reales del día: primero el endpoint JSON (si existe), si no, la página."""
     url = os.getenv("COTIZADOS_API_URL", "").strip()
@@ -218,35 +307,22 @@ def ask_gemini(system: str, user_msg: str) -> str:
     raise RuntimeError("Gemini no respondió.")
 
 
-def ask_claude(system: str, user_msg: str) -> str:
-    from anthropic import Anthropic
-
-    resp = Anthropic().messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=500,
-        system=system,
-        messages=[{"role": "user", "content": user_msg}],
-    )
-    return "".join(b.text for b in resp.content if b.type == "text")
-
-
 def generate_post(topic: dict, history: list, real_data: str | None) -> str:
-    ask = ask_gemini if PROVIDER == "gemini" else ask_claude
     recientes = "\n---\n".join(h["texto"] for h in history[-10:]) or "(ninguno todavía)"
     hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y")
 
     user_msg = (
         f"Fecha: {hoy}\n"
         f"Tema de hoy: {topic['angulo']}\n"
-        f"Enlace a usar: {topic['link']}\n"
+        f"Sección que se promociona (su enlace va en la respuesta, no lo escribas): {topic['link']}\n"
         f"Datos reales del día: {real_data or 'no disponibles'}\n\n"
         f"Posts recientes (no repitas sus ganchos, frases ni estructura):\n{recientes}"
     )
 
     for intento in range(3):
-        text = ask(SYSTEM_PROMPT, user_msg).strip().strip('"')
-        if topic["link"] not in text:
-            text = f"{text}\n\n{topic['link']}"
+        text = ask_gemini(SYSTEM_PROMPT, user_msg).strip().strip('"')
+        # Por si la IA incluye algún enlace igualmente: el enlace va solo en la respuesta.
+        text = re.sub(r"[ \t]*https?://\S+", "", text).strip()
         if len(text) <= THREADS_MAX_CHARS:
             return text
         log(f"Post demasiado largo ({len(text)} caracteres), reintentando ({intento + 1}/3)...")
@@ -268,8 +344,15 @@ def threads_request(method: str, path: str, token: str, **params) -> dict:
     raise RuntimeError("Threads API no respondió.")
 
 
-def publish_to_threads(text: str, token: str) -> str:
-    container = threads_request("POST", "/me/threads", token, media_type="TEXT", text=text)
+def publish_to_threads(
+    text: str, token: str, reply_to_id: str | None = None, image_url: str | None = None
+) -> str:
+    params = {"media_type": "TEXT", "text": text}
+    if image_url:
+        params.update(media_type="IMAGE", image_url=image_url)
+    if reply_to_id:
+        params["reply_to_id"] = reply_to_id
+    container = threads_request("POST", "/me/threads", token, **params)
     creation_id = container["id"]
     log(f"Contenedor creado: {creation_id}")
 
@@ -316,10 +399,10 @@ def main() -> int:
     if not token and not DRY_RUN:
         log("Falta THREADS_ACCESS_TOKEN.")
         return 1
-    if not (os.getenv("GEMINI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")):
-        log("Falta GEMINI_API_KEY (o ANTHROPIC_API_KEY).")
+    if not os.getenv("GEMINI_API_KEY"):
+        log("Falta GEMINI_API_KEY.")
         return 1
-    log(f"IA: {PROVIDER} ({GEMINI_MODEL if PROVIDER == 'gemini' else CLAUDE_MODEL})")
+    log(f"IA: Gemini ({GEMINI_MODEL})")
 
     history = load_history()
     topic = pick_topic(history)
@@ -327,19 +410,39 @@ def main() -> int:
 
     text = generate_post(topic, history, fetch_real_data())
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
+    reply_text = random.choice(REPLY_TEMPLATES).format(link=topic["link"])
+    log(f"Respuesta con el enlace:\n{reply_text}\n")
+    image = capture_rates_image()
 
     if DRY_RUN:
         log("DRY_RUN activo: no se publica ni se guarda historial.")
         return 0
 
-    post_id = publish_to_threads(text, token)
+    post_id = None
+    if image:
+        try:
+            image_url = publish_image(image)
+            log(f"Imagen publicada: {image_url}")
+            post_id = publish_to_threads(text, token, image_url=image_url)
+        except Exception as e:  # noqa: BLE001
+            log(f"Aviso: no se pudo publicar con imagen ({e}); se publica solo el texto.")
+    if not post_id:
+        post_id = publish_to_threads(text, token)
     log(f"Publicado en Threads. ID: {post_id}")
+
+    reply_id = None
+    try:
+        reply_id = publish_to_threads(reply_text, token, reply_to_id=post_id)
+        log(f"Respuesta con el enlace publicada. ID: {reply_id}")
+    except Exception as e:  # noqa: BLE001
+        log(f"Aviso: el post salió, pero no se pudo publicar la respuesta con el enlace ({e}).")
 
     history.append(
         {
             "fecha": dt.datetime.now(TZ_VE).isoformat(timespec="minutes"),
             "tema": topic["id"],
             "post_id": post_id,
+            "reply_id": reply_id,
             "texto": text,
         }
     )
