@@ -72,10 +72,14 @@ python bot/post.py
   aparecen (BCV, USDT). Si defines `COTIZADOS_API_URL`, usa ese JSON en vez de la página (más
   rápido y estable). Si no logra leer cifras, publica igual pero sin números: nunca los inventa.
   El log de cada ejecución muestra el texto leído, para que verifiques que es correcto.
-- **Imagen de tasas:** el bot captura la tarjeta "Brecha Cambiaria" de `/cotizaciones` (fecha,
-  BCV y Binance P2P), la guarda en `public/tasas.png`, la sube al repo y le pasa a Threads su URL
-  de `raw.githubusercontent.com`. Por eso **el repo debe ser público** (las claves siguen en los
-  secretos). Si la imagen falla, el post se publica solo con texto.
+- **Imagen del post:** cada tema tiene varias vistas posibles de la web (tarjetas de brecha,
+  dólar BCV, euro BCV y Binance de `/cotizaciones`, la calculadora o `/noticias`; ver `VISTAS` y
+  `"vistas"` en `TEMAS`). El bot elige una sin repetir la del post anterior, la captura en
+  `public/tasas.png`, la sube al repo y le pasa a Threads su URL de `raw.githubusercontent.com`.
+  Por eso **el repo debe ser público** (las claves siguen en los secretos). Si la imagen falla,
+  el post se publica solo con texto.
+- **Novedades:** en el tema "noticias" el bot lee `/noticias` (registro de mejoras de la app) y
+  comenta 1 o 2 mejoras reales en vez de citar tasas.
 - **Enlace en la respuesta:** el post principal sale sin enlace (Threads suele dar menos
   alcance a los posts con enlaces externos) y justo después el bot responde a su propio post con
   el enlace de la sección. Los textos de esa respuesta están en `REPLY_TEMPLATES`.

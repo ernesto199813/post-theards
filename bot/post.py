@@ -6,8 +6,8 @@ Flujo:
   2. Lee las tasas reales del día: de COTIZADOS_API_URL si existe, o abriendo
      /cotizaciones en un navegador sin interfaz (la página carga los datos con JavaScript).
   3. Genera el texto con Gemini (Google AI Studio), evitando repetir los últimos posts.
-  4. Captura la tarjeta de tasas de /cotizaciones como imagen en public/tasas.png y la sube al
-     repo (debe ser público) para que Threads la descargue. Si falla, el post va sin imagen.
+  4. Captura una vista de la web según el tema (tarjetas de /cotizaciones, calculadora o
+     noticias; ver VISTAS) como imagen en public/tasas.png y la sube al repo (debe ser público) para que Threads la descargue. Si falla, el post va sin imagen.
   5. Publica en Threads (crear contenedor -> esperar -> publicar) y responde al propio
      post con el enlace (los posts sin enlace externo suelen tener más alcance).
   6. Guarda el historial y, una vez por semana, renueva el token de Threads.
@@ -71,53 +71,73 @@ DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
 FORCE_REFRESH = os.getenv("FORCE_REFRESH", "false").lower() == "true"
 GEMINI_MODEL = os.getenv("GEMINI_MODEL") or "gemini-3.5-flash-lite"
 
-# Cada tema define el ángulo del post y el enlace que se publica en la respuesta.
+# Cada tema define el ángulo del post, el enlace que se publica en la respuesta y las vistas
+# de la web que pueden ir como imagen (ver VISTAS).
 TEMAS = [
     {
         "id": "tasa_bcv",
         "angulo": "Invita a consultar la tasa oficial del BCV de hoy en un solo lugar, rápido y sin anuncios molestos.",
         "link": f"{SITE}/cotizaciones",
+        "vistas": ["cot_dolar", "cot_brecha"],
     },
     {
         "id": "calculadora",
         "angulo": "Presenta la calculadora: convertir entre bolívares, dólares y USDT en segundos (ej. para pagar, cobrar o cotizar un producto).",
         "link": f"{SITE}/calculator",
+        "vistas": ["calculadora"],
     },
     {
         "id": "bcv_vs_usdt",
         "angulo": "Explica por qué conviene comparar la tasa BCV con la cotización del USDT antes de cambiar o fijar precios.",
         "link": f"{SITE}/cotizaciones",
+        "vistas": ["cot_brecha", "cot_binance"],
     },
     {
         "id": "noticias",
-        "angulo": "Invita a ponerse al día con las noticias económicas y del dólar en Venezuela dentro de la web.",
+        "angulo": "Cuenta las últimas novedades y mejoras de la app (la sección Noticias es el registro de cambios de Cotizados, no noticias económicas).",
         "link": f"{SITE}/noticias",
+        "vistas": ["noticias"],
     },
     {
         "id": "comunidad",
         "angulo": "Invita a la comunidad a dejar sus comentarios y sugerencias para mejorar la app. Tono cercano, pide opinión.",
         "link": f"{SITE}/comentarios",
+        "vistas": ["cot_brecha", "cot_dolar", "cot_euro", "cot_binance", "calculadora"],
     },
     {
         "id": "app_movil",
         "angulo": "Cuenta que Cotizados se puede agregar a la pantalla de inicio del teléfono y usarse como una app, sin descargar nada de la tienda.",
         "link": SITE,
+        "vistas": ["calculadora", "cot_brecha", "cot_dolar"],
     },
     {
         "id": "tip_finanzas",
         "angulo": "Da un tip práctico y breve de finanzas personales para quien cobra o paga en bolívares y dólares, y cierra recomendando Cotizados.",
         "link": f"{SITE}/calculator",
+        "vistas": ["cot_euro", "cot_binance", "cot_dolar", "calculadora"],
     },
     {
         "id": "comerciantes",
         "angulo": "Habla a emprendedores y comerciantes: actualizar precios en bolívares según la tasa del día con la calculadora.",
         "link": f"{SITE}/calculator",
+        "vistas": ["calculadora", "cot_dolar"],
     },
 ]
 
+# Capturas posibles para la imagen del post. "tarjeta" es el índice de la tarjeta en /cotizaciones
+# (0 brecha, 1 dólar BCV, 2 euro BCV, 3 Binance); "hasta" es el texto donde termina el recorte.
+VISTAS = {
+    "cot_brecha": {"path": "/cotizaciones", "tarjeta": 0, "desc": "la brecha cambiaria entre el BCV y Binance P2P"},
+    "cot_dolar": {"path": "/cotizaciones", "tarjeta": 1, "desc": "la tasa del dólar BCV de hoy y su cambio"},
+    "cot_euro": {"path": "/cotizaciones", "tarjeta": 2, "desc": "la tasa del euro BCV de hoy y su cambio"},
+    "cot_binance": {"path": "/cotizaciones", "tarjeta": 3, "desc": "el precio de compra y venta del USDT en Binance P2P"},
+    "calculadora": {"path": "/calculator", "hasta": "AÑADIR TASA", "desc": "la calculadora convirtiendo dólares BCV a bolívares"},
+    "noticias": {"path": "/noticias", "alto": 495, "desc": "la sección Noticias con las últimas mejoras de la app"},
+}
+
 SYSTEM_PROMPT = f"""Eres el community manager de Cotizados ({SITE}), una web/app gratuita venezolana
-para consultar la tasa del BCV, la cotización del USDT, convertir montos con una calculadora y leer
-noticias económicas.
+para consultar la tasa del BCV, la cotización del USDT, convertir montos con una calculadora y ver
+las novedades de la app.
 
 Escribes UN post para Threads en español de Venezuela, natural y cercano (sin sonar a anuncio
 corporativo).
@@ -131,8 +151,12 @@ Reglas estrictas:
 - "Datos reales del día" es el texto de la página de cotizaciones de Cotizados. Si trae tasas,
   aprovéchalas: cita 1 o 2 cifras (por ejemplo BCV y USDT) copiándolas exactamente como aparecen,
   con su etiqueta correcta. Si no estás seguro de qué representa un número, no lo uses.
+- Si los "Datos reales del día" son las novedades de la app (sección Noticias), comenta 1 o 2
+  mejoras recientes tal como se describen ahí, contadas como "estuvimos mejorando…". No inventes
+  funciones que no aparezcan en esos datos.
 - NUNCA inventes ni calcules cifras de tasas, precios o porcentajes. Si no hay datos, no
   menciones cifras.
+- Si se indica qué muestra la imagen del post, puedes referirte a ella ("en la imagen…").
 - No prometas ganancias ni des consejos de inversión.
 - Devuelve solo el texto del post, sin comillas ni explicaciones."""
 
@@ -200,36 +224,90 @@ def fetch_from_page() -> str | None:
     return clean[:2500] if re.search(r"\d+[.,]\d{2}", clean) else None
 
 
-def capture_rates_image() -> pathlib.Path | None:
-    """Captura la tarjeta "Brecha Cambiaria" de /cotizaciones (fecha, BCV y Binance P2P)
-    como PNG en public/tasas.png (se sobrescribe cada día)."""
+def fetch_news() -> str | None:
+    """Texto de /noticias (registro de mejoras de la app) para el tema "noticias"."""
     from playwright.sync_api import sync_playwright
 
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page(locale="es-VE")
+            page.goto(f"{SITE}/noticias", wait_until="networkidle", timeout=45000)
+            text = page.inner_text("main") if page.query_selector("main") else page.inner_text("body")
+            browser.close()
+        clean = "\n".join(l.strip() for l in text.splitlines() if l.strip())
+        log(f"Novedades leídas:\n{clean[:1500]}\n")
+        return clean[:1500]
+    except Exception as e:  # noqa: BLE001
+        log(f"Aviso: no se pudieron leer las novedades ({e}).")
+        return None
+
+
+def pick_view(topic: dict, history: list) -> str:
+    """Elige una vista del tema, evitando repetir la imagen del post anterior."""
+    last = history[-1].get("vista") if history else None
+    opciones = [v for v in topic["vistas"] if v != last] or topic["vistas"]
+    return random.choice(opciones)
+
+
+def capture_view(view_id: str) -> pathlib.Path | None:
+    """Captura una vista de la web (ver VISTAS) como PNG en public/tasas.png."""
+    from playwright.sync_api import sync_playwright
+
+    view = VISTAS[view_id]
     out = IMAGE_FILE
     out.parent.mkdir(parents=True, exist_ok=True)
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch()
+            # Ventana alta para que la barra de navegación fija no tape las tarjetas de abajo.
             page = browser.new_page(
-                locale="es-VE", viewport={"width": 430, "height": 932},
+                locale="es-VE", viewport={"width": 430, "height": 1600},
                 device_scale_factor=2, color_scheme="dark",
             )
-            page.goto(f"{SITE}/cotizaciones", wait_until="networkidle", timeout=45000)
-            page.wait_for_function(
-                r"() => /\d+[.,]\d{2}/.test(document.body.innerText)", timeout=20000
-            )
+            page.goto(f"{SITE}{view['path']}", wait_until="networkidle", timeout=45000)
+            try:
+                page.wait_for_function(
+                    r"() => /\d+[.,]\d{2}/.test(document.body.innerText)", timeout=15000
+                )
+            except Exception:  # noqa: BLE001
+                pass  # /noticias no tiene cifras
             page.wait_for_timeout(1500)  # deja terminar las animaciones de las cifras
-            # Desde el aviso "Actualizado: ..." hasta el final de la primera tarjeta.
-            bottom = page.evaluate(
-                "() => { const c = document.querySelector('main [class*=\"rounded-[28px]\"]');"
-                " return c ? c.getBoundingClientRect().bottom : 480; }"
-            )
-            page.screenshot(path=str(out), clip={"x": 0, "y": 0, "width": 430, "height": bottom + 20})
+
+            if "tarjeta" in view:
+                box = page.evaluate(
+                    """(i) => {
+                        const c = document.querySelectorAll('main [class*="rounded-[28px]"]')[i];
+                        if (!c) return null;
+                        const r = c.getBoundingClientRect();
+                        return {top: r.top + scrollY, bottom: r.bottom + scrollY};
+                    }""",
+                    view["tarjeta"],
+                )
+                if not box:
+                    raise RuntimeError(f"no se encontró la tarjeta {view['tarjeta']}")
+                # La primera tarjeta incluye el aviso "Actualizado: ..." que tiene encima.
+                top = 0 if view["tarjeta"] == 0 else max(0, box["top"] - 16)
+                clip = {"x": 0, "y": top, "width": 430, "height": box["bottom"] + 20 - top}
+            elif "hasta" in view:
+                bottom = page.evaluate(
+                    """(t) => {
+                        const e = [...document.querySelectorAll('button, a, span')]
+                            .find(e => e.innerText && e.innerText.trim().toUpperCase() === t);
+                        return e ? e.getBoundingClientRect().bottom + scrollY : 460;
+                    }""",
+                    view["hasta"],
+                )
+                clip = {"x": 0, "y": 0, "width": 430, "height": bottom + 30}
+            else:
+                clip = {"x": 0, "y": 0, "width": 430, "height": view["alto"]}
+
+            page.screenshot(path=str(out), clip=clip, full_page=True)
             browser.close()
-        log(f"Imagen de tasas generada: {out}")
+        log(f"Imagen generada ({view_id}): {out}")
         return out
     except Exception as e:  # noqa: BLE001
-        log(f"Aviso: no se pudo generar la imagen de tasas ({e}).")
+        log(f"Aviso: no se pudo generar la imagen {view_id} ({e}).")
         return None
 
 
@@ -305,7 +383,7 @@ def ask_gemini(system: str, user_msg: str) -> str:
     raise RuntimeError("Gemini no respondió.")
 
 
-def generate_post(topic: dict, history: list, real_data: str | None) -> str:
+def generate_post(topic: dict, history: list, real_data: str | None, view_id: str) -> str:
     recientes = "\n---\n".join(h["texto"] for h in history[-10:]) or "(ninguno todavía)"
     hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y, %I:%M %p")
 
@@ -313,7 +391,8 @@ def generate_post(topic: dict, history: list, real_data: str | None) -> str:
         f"Fecha y hora: {hoy} (adapta el saludo o el gancho al momento del día)\n"
         f"Tema: {topic['angulo']}\n"
         f"Sección que se promociona (su enlace va en la respuesta, no lo escribas): {topic['link']}\n"
-        f"Datos reales del día: {real_data or 'no disponibles'}\n\n"
+        f"Datos reales del día: {real_data or 'no disponibles'}\n"
+        f"La imagen del post muestra: {VISTAS[view_id]['desc']}\n\n"
         f"Posts recientes (no repitas sus ganchos, frases ni estructura):\n{recientes}"
     )
 
@@ -408,11 +487,15 @@ def main() -> int:
     topic = pick_topic(history)
     log(f"Tema del día: {topic['id']}")
 
-    text = generate_post(topic, history, fetch_real_data())
+    view_id = pick_view(topic, history)
+    log(f"Vista para la imagen: {view_id}")
+    # En el tema "noticias" los datos son las últimas mejoras de la app, no las tasas.
+    data = fetch_news() if topic["id"] == "noticias" else fetch_real_data()
+    text = generate_post(topic, history, data, view_id)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
     reply_text = random.choice(REPLY_TEMPLATES).format(link=topic["link"])
     log(f"Respuesta con el enlace:\n{reply_text}\n")
-    image = capture_rates_image()
+    image = capture_view(view_id)
 
     if DRY_RUN:
         log("DRY_RUN activo: no se publica ni se guarda historial.")
@@ -443,6 +526,7 @@ def main() -> int:
             "tema": topic["id"],
             "post_id": post_id,
             "reply_id": reply_id,
+            "vista": view_id,
             "texto": text,
         }
     )
