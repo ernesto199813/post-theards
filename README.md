@@ -1,6 +1,6 @@
 # Bot diario de Threads — Cotizados
 
-Publica todos los días a las **8:47 a. m. (hora de Venezuela)** un post en Threads promocionando
+Publica **3 posts al día (8:47 a. m., 1:17 p. m. y 7:47 p. m., hora de Venezuela)** en Threads promocionando
 [cotizados.vercel.app](https://cotizados.vercel.app). El texto lo redacta Gemini, rotando 8 temas
 (tasa BCV, calculadora, BCV vs USDT, noticias, comunidad, app móvil, tips, comerciantes) y sin
 repetir los últimos posts. Corre gratis en GitHub Actions.
@@ -55,7 +55,7 @@ En **Settings → Secrets and variables → Actions**:
 ## 4. Probar
 
 **Actions → Post diario en Threads → Run workflow** con *dry_run* marcado: verás el post generado
-en el log sin publicarlo. Desmárcalo para publicar de verdad. Desde ahí corre solo cada día.
+en el log sin publicarlo. Desmárcalo para publicar de verdad. Desde ahí corre solo, 3 veces al día.
 
 Local:
 ```bash
@@ -83,7 +83,7 @@ python bot/post.py
   secreto usando `GH_PAT`. Si falta `GH_PAT`, verás un aviso y tendrás que renovarlo a mano.
 - **Historial:** `data/history.json` guarda los últimos 60 posts; se commitea tras cada publicación.
 - **Personalizar:** edita la lista `TEMAS` y el `SYSTEM_PROMPT` en `bot/post.py`; cambia la hora en
-  el `cron` del workflow (está en UTC).
+  las líneas `cron` del workflow (están en UTC; agrega o quita líneas para publicar más o menos veces).
 
 ## Límites a tener en cuenta
 

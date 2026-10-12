@@ -2,7 +2,7 @@
 Bot diario de Threads para Cotizados (https://cotizados.vercel.app)
 
 Flujo:
-  1. Elige un tema del día (rota por día del año, sin repetir el de ayer).
+  1. Elige el tema siguiente al del último post (rota por todos los temas, sin repetir).
   2. Lee las tasas reales del día: de COTIZADOS_API_URL si existe, o abriendo
      /cotizaciones en un navegador sin interfaz (la página carga los datos con JavaScript).
   3. Genera el texto con Gemini (Google AI Studio), evitando repetir los últimos posts.
@@ -158,13 +158,11 @@ def save_history(history: list) -> None:
 
 
 def pick_topic(history: list) -> dict:
-    today = dt.datetime.now(TZ_VE).date()
-    idx = today.timetuple().tm_yday % len(TEMAS)
-    topic = TEMAS[idx]
-    # Evita repetir el tema del último post (por ejemplo, tras una ejecución manual).
-    if history and history[-1].get("tema") == topic["id"]:
-        topic = TEMAS[(idx + 1) % len(TEMAS)]
-    return topic
+    """Toma el tema siguiente al del último post, así varios posts al día no repiten tema."""
+    ids = [t["id"] for t in TEMAS]
+    last = history[-1].get("tema") if history else None
+    idx = (ids.index(last) + 1) % len(TEMAS) if last in ids else 0
+    return TEMAS[idx]
 
 
 def fetch_from_api(url: str) -> str | None:
@@ -309,11 +307,11 @@ def ask_gemini(system: str, user_msg: str) -> str:
 
 def generate_post(topic: dict, history: list, real_data: str | None) -> str:
     recientes = "\n---\n".join(h["texto"] for h in history[-10:]) or "(ninguno todavía)"
-    hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y")
+    hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y, %I:%M %p")
 
     user_msg = (
-        f"Fecha: {hoy}\n"
-        f"Tema de hoy: {topic['angulo']}\n"
+        f"Fecha y hora: {hoy} (adapta el saludo o el gancho al momento del día)\n"
+        f"Tema: {topic['angulo']}\n"
         f"Sección que se promociona (su enlace va en la respuesta, no lo escribas): {topic['link']}\n"
         f"Datos reales del día: {real_data or 'no disponibles'}\n\n"
         f"Posts recientes (no repitas sus ganchos, frases ni estructura):\n{recientes}"
@@ -370,10 +368,12 @@ def publish_to_threads(
 
 
 def maybe_refresh_token(token: str) -> None:
-    """Renueva el token de larga duración (válido 60 días) una vez por semana.
-    El nuevo token se deja en $RUNNER_TEMP/new_token para que el workflow lo guarde como secreto."""
-    is_monday = dt.datetime.now(TZ_VE).weekday() == 0
-    if not (is_monday or FORCE_REFRESH):
+    """Renueva el token de larga duración (válido 60 días) una vez por semana, en el primer
+    post del lunes. El nuevo token se deja en $RUNNER_TEMP/new_token para que el workflow lo
+    guarde como secreto."""
+    now = dt.datetime.now(TZ_VE)
+    first_monday_post = now.weekday() == 0 and now.hour < 12
+    if not (first_monday_post or FORCE_REFRESH):
         return
     try:
         r = requests.get(

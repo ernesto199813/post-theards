@@ -2,8 +2,10 @@ name: Post diario en Threads
 
 on:
   schedule:
-    # 12:47 UTC = 8:47 a. m. hora de Venezuela (UTC-4)
-    - cron: "47 12 * * *"
+    # Horas en UTC; Venezuela es UTC-4. Para publicar más o menos veces, agrega o quita líneas.
+    - cron: "47 12 * * *"   # 8:47 a. m.
+    - cron: "17 17 * * *"   # 1:17 p. m.
+    - cron: "47 23 * * *"   # 7:47 p. m.
   workflow_dispatch:
     inputs:
       dry_run:
