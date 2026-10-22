@@ -2,10 +2,13 @@
 Bot diario de Threads para Cotizados (https://cotizados.vercel.app)
 
 Flujo:
-  1. Elige el tema siguiente al del último post (rota por todos los temas, sin repetir).
+  1. Elige el tema siguiente al del último post (rota por todos los formatos narrativos:
+     noticia rápida, ¿cuánto es?, debate, detrás de cámaras, escena, brecha, truco).
   2. Lee las tasas reales del día: de COTIZADOS_API_URL si existe, o abriendo
-     /cotizaciones en un navegador sin interfaz (la página carga los datos con JavaScript).
-  3. Genera el texto con Gemini (Google AI Studio), evitando repetir los últimos posts.
+     /cotizaciones en un navegador sin interfaz (la página carga los datos con JavaScript),
+     y calcula en Python montos de ejemplo, variación y brecha (la IA no calcula cifras).
+  3. Genera el texto con Gemini (Google AI Studio) y lo descarta si trae muletillas de
+     plantilla (saludos, "en la imagen…", "pruébalo aquí abajo"…) o es demasiado largo.
   4. Captura una vista de la web según el tema (tarjetas de /cotizaciones, calculadora o
      noticias; ver VISTAS) como imagen en public/tasas.png y la sube al repo (debe ser público) para que Threads la descargue. Si falla, el post va sin imagen.
   5. Publica en Threads (crear contenedor -> esperar -> publicar) y responde al propio
@@ -17,6 +20,7 @@ Variables de entorno:
   GEMINI_API_KEY        (obligatoria) clave de Google AI Studio
   COTIZADOS_API_URL     (opcional)    endpoint JSON con las tasas (si no, se lee la página)
   GEMINI_MODEL          (opcional)    por defecto gemini-3.5-flash-lite
+  THREADS_TOPIC_TAG     (opcional)    tema de Threads de cada post, por defecto DólarBCV
   DRY_RUN=true          (opcional)    genera el post pero no lo publica
   FORCE_REFRESH=true    (opcional)    fuerza la renovación del token
 
@@ -58,69 +62,108 @@ IMAGE_FILE = ROOT / "public" / "tasas.png"
 SITE = "https://cotizados.vercel.app"
 GRAPH = "https://graph.threads.net/v1.0"
 THREADS_MAX_CHARS = 500
-# Texto de la respuesta con el enlace; se elige uno al azar para no repetir siempre lo mismo.
-REPLY_TEMPLATES = [
-    "Aquí lo tienes 👉 {link}",
-    "Te dejo el enlace: {link}",
-    "Pruébalo aquí 👇\n{link}",
-    "Entra aquí: {link}",
-]
 TZ_VE = dt.timezone(dt.timedelta(hours=-4))
 
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
 FORCE_REFRESH = os.getenv("FORCE_REFRESH", "false").lower() == "true"
 GEMINI_MODEL = os.getenv("GEMINI_MODEL") or "gemini-3.5-flash-lite"
 
-# Cada tema define el ángulo del post, el enlace que se publica en la respuesta y las vistas
-# de la web que pueden ir como imagen (ver VISTAS).
+# Cada tema es un formato narrativo distinto (no solo un producto distinto): el post habla de la
+# vida del lector con dos monedas y la app aparece poco o nada; el enlace va en la respuesta.
+# "angulo" guía a la IA, "link" es la sección del enlace, "vistas" las imágenes posibles (ver
+# VISTAS), "respuesta" el texto de la respuesta con el enlace y "datos" qué se le pasa a la IA.
 TEMAS = [
     {
-        "id": "tasa_bcv",
-        "angulo": "Invita a consultar la tasa oficial del BCV de hoy en un solo lugar, rápido y sin anuncios molestos.",
+        "id": "movimiento_dia",
+        "angulo": (
+            "Formato NOTICIA RÁPIDA. Cuenta cómo se movió el dólar BCV respecto a ayer, como lo "
+            "contaría un amigo que siempre está pendiente de la tasa. La primera línea es la cifra "
+            "de hoy y si subió o bajó. Luego una línea de contexto humano (qué significa para el "
+            "bolsillo). Cierra con una pregunta corta y fácil de responder."
+        ),
         "link": f"{SITE}/cotizaciones",
-        "vistas": ["cot_dolar", "cot_brecha"],
+        "vistas": ["cot_dolar"],
+        "respuesta": "Todas las tasas de hoy en un solo sitio 👉 {link}",
+        "datos": "tasas",
     },
     {
-        "id": "calculadora",
-        "angulo": "Presenta la calculadora: convertir entre bolívares, dólares y USDT en segundos (ej. para pagar, cobrar o cotizar un producto).",
+        "id": "cuanto_es",
+        "angulo": (
+            "Formato ¿CUÁNTO ES? Aterriza la tasa en algo cotidiano: elige UN monto de los cálculos "
+            "ya hechos (ej. una compra de 20 $) y di cuánto es hoy en bolívares a tasa BCV y a tasa "
+            "Binance P2P, y cuánto es la diferencia. Que se sienta como algo que le pasa a cualquiera "
+            "en el mercado, la panadería o la farmacia."
+        ),
         "link": f"{SITE}/calculator",
-        "vistas": ["calculadora"],
+        "vistas": ["calculadora", "cot_brecha"],
+        "respuesta": "Calcula tu monto exacto aquí 👉 {link}",
+        "datos": "tasas",
     },
     {
-        "id": "bcv_vs_usdt",
-        "angulo": "Explica por qué conviene comparar la tasa BCV con la cotización del USDT antes de cambiar o fijar precios.",
+        "id": "debate",
+        "angulo": (
+            "Formato DEBATE. Lanza UNA pregunta que divida opiniones sobre el día a día con dos "
+            "monedas (ej. ¿cobrar a BCV o a paralelo?, ¿vuelto en bolívares o en caramelos?, "
+            "¿precios en $ o en Bs en los negocios?, ¿pago móvil o efectivo?). Toma una postura "
+            "ligera y con humor para provocar que la gente responda. No hables de la app."
+        ),
         "link": f"{SITE}/cotizaciones",
         "vistas": ["cot_brecha", "cot_binance"],
+        "respuesta": "Por si quieres ver cómo están las tasas ahorita 👉 {link}",
+        "datos": "tasas",
     },
     {
-        "id": "noticias",
-        "angulo": "Cuenta las últimas novedades y mejoras de la app (la sección Noticias es el registro de cambios de Cotizados, no noticias económicas).",
+        "id": "novedades",
+        "angulo": (
+            "Formato DETRÁS DE CÁMARAS. Habla como el creador de la app contando en qué estuvo "
+            "trabajando: 1 o 2 mejoras reales y recientes de los datos, explicadas por el problema "
+            "que resuelven (no como lista de funciones). Cierra pidiendo una opinión concreta sobre "
+            "esa mejora."
+        ),
         "link": f"{SITE}/noticias",
-        "vistas": ["noticias"],
+        "vistas": ["noticias", "calculadora"],
+        "respuesta": "Aquí está todo lo nuevo 👉 {link}",
+        "datos": "noticias",
     },
     {
-        "id": "comunidad",
-        "angulo": "Invita a la comunidad a dejar sus comentarios y sugerencias para mejorar la app. Tono cercano, pide opinión.",
-        "link": f"{SITE}/comentarios",
-        "vistas": ["cot_brecha", "cot_dolar", "cot_euro", "cot_binance", "calculadora"],
-    },
-    {
-        "id": "app_movil",
-        "angulo": "Cuenta que Cotizados se puede agregar a la pantalla de inicio del teléfono y usarse como una app, sin descargar nada de la tienda.",
-        "link": SITE,
-        "vistas": ["calculadora", "cot_brecha", "cot_dolar"],
-    },
-    {
-        "id": "tip_finanzas",
-        "angulo": "Da un tip práctico y breve de finanzas personales para quien cobra o paga en bolívares y dólares, y cierra recomendando Cotizados.",
-        "link": f"{SITE}/calculator",
-        "vistas": ["cot_euro", "cot_binance", "cot_dolar", "calculadora"],
-    },
-    {
-        "id": "comerciantes",
-        "angulo": "Habla a emprendedores y comerciantes: actualizar precios en bolívares según la tasa del día con la calculadora.",
+        "id": "escena",
+        "angulo": (
+            "Formato ESCENA. Una mini escena con humor, muy reconocible, de la vida diaria en "
+            "Venezuela con las tasas (el vendedor que saca la calculadora del teléfono, el '¿a qué "
+            "tasa?', el vuelto que nunca cuadra, el grupo de WhatsApp de la familia preguntando el "
+            "dólar). 2-4 líneas cortas, estilo diálogo o narración rápida. Remata con un giro "
+            "gracioso. La app, si aparece, en media línea al final."
+        ),
         "link": f"{SITE}/calculator",
         "vistas": ["calculadora", "cot_dolar"],
+        "respuesta": "Para la próxima, la calculadora 👉 {link}",
+        "datos": "tasas",
+    },
+    {
+        "id": "brecha",
+        "angulo": (
+            "Formato DATO QUE DUELE. Usa la brecha entre BCV y Binance P2P de los cálculos ya hechos "
+            "y tradúcela a plata: cuántos bolívares de diferencia hay por cada 100 $. Explica en "
+            "una línea a quién le afecta (quien cobra a BCV y compra a paralelo, o al revés). "
+            "Cierra preguntando de qué lado está la gente."
+        ),
+        "link": f"{SITE}/cotizaciones",
+        "vistas": ["cot_brecha"],
+        "respuesta": "La brecha actualizada aquí 👉 {link}",
+        "datos": "tasas",
+    },
+    {
+        "id": "truco",
+        "angulo": (
+            "Formato TRUCO ÚTIL. Un truco práctico y concreto para quien cobra o paga en bolívares y "
+            "dólares (o para emprendedores que actualizan precios). Puede ser de finanzas personales "
+            "o de cómo usar Cotizados (agregarla a la pantalla de inicio sin descargar nada, la "
+            "calculadora con varias monedas, la tasa libre). Directo: 'Truco: ...'. Nada de sermones."
+        ),
+        "link": SITE,
+        "vistas": ["calculadora", "cot_dolar", "cot_euro"],
+        "respuesta": "Aquí la tienes 👉 {link}",
+        "datos": "tasas",
     },
 ]
 
@@ -135,30 +178,58 @@ VISTAS = {
     "noticias": {"path": "/noticias", "alto": 495, "desc": "la sección Noticias con las últimas mejoras de la app"},
 }
 
-SYSTEM_PROMPT = f"""Eres el community manager de Cotizados ({SITE}), una web/app gratuita venezolana
-para consultar la tasa del BCV, la cotización del USDT, convertir montos con una calculadora y ver
-las novedades de la app.
+# Tema de Threads (topic tag) con el que se etiqueta cada post; reemplaza a los hashtags del texto.
+TOPIC_TAG = os.getenv("THREADS_TOPIC_TAG") or "DólarBCV"
 
-Escribes UN post para Threads en español de Venezuela, natural y cercano (sin sonar a anuncio
-corporativo).
+SYSTEM_PROMPT = f"""Eres la persona venezolana que creó Cotizados ({SITE}), una web/app gratuita para
+ver la tasa del BCV, el USDT en Binance P2P y convertir montos. Escribes en tu cuenta personal de
+Threads, en primera persona, como una persona real (no como una marca ni un community manager).
 
-Reglas estrictas:
-- Máximo 450 caracteres en total.
-- Empieza con un gancho en la primera línea (pregunta, dato o situación cotidiana).
-- NO incluyas ningún enlace ni URL: el enlace se publica aparte, en una respuesta al post.
-  Puedes cerrar invitando a ver el enlace "aquí abajo" o "en la respuesta".
-- Máximo 1-2 emojis y máximo 2 hashtags (por ejemplo #DólarBCV #Venezuela), o ninguno.
-- "Datos reales del día" es el texto de la página de cotizaciones de Cotizados. Si trae tasas,
-  aprovéchalas: cita 1 o 2 cifras (por ejemplo BCV y USDT) copiándolas exactamente como aparecen,
-  con su etiqueta correcta. Si no estás seguro de qué representa un número, no lo uses.
-- Si los "Datos reales del día" son las novedades de la app (sección Noticias), comenta 1 o 2
-  mejoras recientes tal como se describen ahí, contadas como "estuvimos mejorando…". No inventes
-  funciones que no aparezcan en esos datos.
-- NUNCA inventes ni calcules cifras de tasas, precios o porcentajes. Si no hay datos, no
-  menciones cifras.
-- Si se indica qué muestra la imagen del post, puedes referirte a ella ("en la imagen…").
+Tu objetivo NO es vender la app: es que la gente se detenga a leer y RESPONDA. La gente sigue
+cuentas que le informan, le hacen reír o le dan algo útil. La app se gana su lugar sola.
+
+Cómo escribir:
+- Español de Venezuela, natural, como se escribe en redes. Frases cortas. Puedes usar
+  expresiones venezolanas con moderación (chamo, de pana, ladilla, echarle un ojo, real).
+- La PRIMERA LÍNEA lo es todo: corta (máx. ~70 caracteres), que se entienda sola y genere
+  curiosidad, sorpresa o identificación. Puede ser una cifra, una afirmación rotunda, una escena
+  o una opinión. Luego un salto de línea.
+- Entre 120 y 320 caracteres en total. Nunca más de 420. Párrafos de 1-2 líneas.
+- 0 o 1 emoji, solo si suma.
+- Sigue el formato que se te indica; cada formato tiene una estructura distinta.
+
+Prohibido (hace que todos los posts suenen iguales y la gente los ignora):
+- Saludos al inicio ("Buenas tardes", "Buenos días", "Hola", "por aquí").
+- Empezar con preguntas retóricas genéricas ("¿Sabías que…?", "¿Cansado de…?", "¿Sacando
+  cuentas…?", "¿Revisando…?").
+- Describir la imagen ("En la imagen ves…"). La imagen acompaña, no se explica.
+- Llamados a la acción de anuncio ("Pruébalo aquí abajo", "Te dejo el enlace", "Entra ya").
+  Si hace falta, como mucho una mención casual al final ("lo tengo en la app", "link abajo").
+- Hashtags y enlaces (el enlace se publica aparte, en una respuesta).
+- Frases de relleno corporativas ("hacerte la vida más fácil", "sin complicaciones", "al vuelo").
+
+Datos:
+- Usa SOLO las cifras de "Cálculos ya hechos" o de "Datos reales del día", copiadas exactamente.
+  NUNCA inventes ni calcules cifras por tu cuenta. Si no hay datos, no menciones cifras.
+- Si los datos son las novedades de la app (sección Noticias), habla solo de mejoras que aparezcan
+  ahí; no inventes funciones.
 - No prometas ganancias ni des consejos de inversión.
-- Devuelve solo el texto del post, sin comillas ni explicaciones."""
+
+Devuelve solo el texto del post, sin comillas ni explicaciones."""
+
+# Muletillas que delatan el post plantilla; si aparecen, se pide otra versión a la IA.
+FRASES_PROHIBIDAS = [
+    r"^\W*(buen[oa]s|hola|feliz)\b",
+    r"por aqu[ií]",
+    r"en la imagen",
+    r"pru[eé]balo",
+    r"aqu[ií] abajo",
+    r"te dejo el enlace",
+    r"^\W*¿sab[ií]as que",
+    r"^\W*¿cansad[oa] de",
+    r"hacerte la vida",
+    r"al vuelo",
+]
 
 
 def log(msg: str) -> None:
@@ -225,7 +296,7 @@ def fetch_from_page() -> str | None:
 
 
 def fetch_news() -> str | None:
-    """Texto de /noticias (registro de mejoras de la app) para el tema "noticias"."""
+    """Texto de /noticias (registro de mejoras de la app) para el tema "novedades"."""
     from playwright.sync_api import sync_playwright
 
     try:
@@ -354,13 +425,60 @@ def fetch_real_data() -> str | None:
     return None
 
 
+def parse_num(s: str) -> float:
+    """'1.005,71' -> 1005.71"""
+    return float(s.replace(".", "").replace(",", "."))
+
+
+def fmt_bs(x: float) -> str:
+    """1005.714 -> '1.005,71'"""
+    return f"{x:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
+
+
+def rate_calcs(real_data: str | None) -> str | None:
+    """Saca BCV, BCV de ayer y Binance P2P del texto de /cotizaciones y hace las cuentas en
+    Python (montos en bolívares, variación, brecha), para que la IA no tenga que calcular."""
+    if not real_data:
+        return None
+    num = r"(\d{1,3}(?:\.\d{3})*,\d{2})"
+    bcv = re.search(r"BCV Oficial\s+" + num, real_data)
+    p2p = re.search(r"Binance P2P\s+" + num, real_data)
+    if not bcv:
+        return None
+    bcv = parse_num(bcv.group(1))
+    lines = [f"Dólar BCV hoy: {fmt_bs(bcv)} Bs"]
+    ayer = re.search(r"Hace 1 d\S*\s+" + num, real_data)
+    if ayer:
+        ayer = parse_num(ayer.group(1))
+        diff = bcv - ayer
+        if abs(diff) < 0.005:
+            lines.append(f"Respecto a ayer ({fmt_bs(ayer)} Bs): sin cambios")
+        else:
+            verbo = "subió" if diff > 0 else "bajó"
+            lines.append(
+                f"Respecto a ayer ({fmt_bs(ayer)} Bs): {verbo} {fmt_bs(abs(diff))} Bs "
+                f"({fmt_bs(abs(diff) / ayer * 100)}%)"
+            )
+    if p2p:
+        p2p = parse_num(p2p.group(1))
+        lines.append(f"USDT Binance P2P: {fmt_bs(p2p)} Bs")
+        lines.append(f"Brecha BCV vs P2P: {fmt_bs((p2p - bcv) / bcv * 100)}%")
+    for usd in (1, 5, 10, 20, 50, 100):
+        line = f"{usd} $ = {fmt_bs(usd * bcv)} Bs a tasa BCV"
+        if p2p:
+            line += (f" | {fmt_bs(usd * p2p)} Bs a tasa P2P"
+                     f" | diferencia {fmt_bs(usd * (p2p - bcv))} Bs")
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def ask_gemini(system: str, user_msg: str) -> str:
     """Llama a la API de Gemini (Google AI Studio) por REST."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
     body = {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": user_msg}]}],
-        "generationConfig": {"temperature": 0.9, "maxOutputTokens": 2048},
+        "generationConfig": {"temperature": 1.0, "maxOutputTokens": 2048},
     }
     for intento in range(3):
         r = requests.post(
@@ -383,28 +501,49 @@ def ask_gemini(system: str, user_msg: str) -> str:
     raise RuntimeError("Gemini no respondió.")
 
 
+def post_problems(text: str) -> list[str]:
+    """Muletillas prohibidas o largo excesivo; lista vacía si el post está bien."""
+    problems = [p for p in FRASES_PROHIBIDAS if re.search(p, text, re.IGNORECASE | re.MULTILINE)]
+    if len(text) > 420:
+        problems.append(f"demasiado largo ({len(text)} caracteres, máximo 420)")
+    return problems
+
+
 def generate_post(topic: dict, history: list, real_data: str | None, view_id: str) -> str:
-    recientes = "\n---\n".join(h["texto"] for h in history[-10:]) or "(ninguno todavía)"
+    # Solo las primeras líneas: si la IA ve los posts completos tiende a copiar su estructura.
+    ganchos = "\n".join(
+        f"- {h['texto'].strip().splitlines()[0][:90]}" for h in history[-12:] if h.get("texto")
+    ) or "(ninguno todavía)"
     hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y, %I:%M %p")
+    calcs = rate_calcs(real_data) if topic["datos"] == "tasas" else None
 
     user_msg = (
-        f"Fecha y hora: {hoy} (adapta el saludo o el gancho al momento del día)\n"
-        f"Tema: {topic['angulo']}\n"
-        f"Sección que se promociona (su enlace va en la respuesta, no lo escribas): {topic['link']}\n"
-        f"Datos reales del día: {real_data or 'no disponibles'}\n"
-        f"La imagen del post muestra: {VISTAS[view_id]['desc']}\n\n"
-        f"Posts recientes (no repitas sus ganchos, frases ni estructura):\n{recientes}"
+        f"Fecha y hora en Venezuela: {hoy}\n\n"
+        f"{topic['angulo']}\n\n"
+        f"Cálculos ya hechos (cifras exactas, úsalas tal cual): {calcs or 'no disponibles'}\n\n"
+        f"Datos reales del día:\n{real_data or 'no disponibles'}\n\n"
+        f"El post lleva una imagen de {VISTAS[view_id]['desc']} (no la describas).\n\n"
+        f"Primeras líneas de los últimos posts (escribe algo que no se parezca a ninguna):\n{ganchos}"
     )
 
+    text = ""
     for intento in range(3):
         text = ask_gemini(SYSTEM_PROMPT, user_msg).strip().strip('"')
-        # Por si la IA incluye algún enlace igualmente: el enlace va solo en la respuesta.
-        text = re.sub(r"[ \t]*https?://\S+", "", text).strip()
-        if len(text) <= THREADS_MAX_CHARS:
+        # El enlace va solo en la respuesta y el tema se marca con topic_tag, no con hashtags.
+        text = re.sub(r"[ \t]*https?://\S+", "", text)
+        text = re.sub(r"[ \t]*#\w+", "", text).strip()
+        problems = post_problems(text)
+        if not problems:
             return text
-        log(f"Post demasiado largo ({len(text)} caracteres), reintentando ({intento + 1}/3)...")
-        user_msg += "\n\nIMPORTANTE: el anterior fue demasiado largo. Hazlo más corto."
+        log(f"Post descartado ({'; '.join(problems)}), reintentando ({intento + 1}/3):\n{text}\n")
+        user_msg += (
+            f"\n\nTu versión anterior no sirve por: {'; '.join(problems)}. "
+            "Escribe otra distinta que cumpla todas las reglas."
+        )
 
+    if len(text) <= THREADS_MAX_CHARS:
+        log("Aviso: se publica la última versión aunque no cumple todas las reglas.")
+        return text
     raise RuntimeError("No se logró un post dentro del límite de 500 caracteres.")
 
 
@@ -429,7 +568,16 @@ def publish_to_threads(
         params.update(media_type="IMAGE", image_url=image_url)
     if reply_to_id:
         params["reply_to_id"] = reply_to_id
-    container = threads_request("POST", "/me/threads", token, **params)
+    else:
+        params["topic_tag"] = TOPIC_TAG
+    try:
+        container = threads_request("POST", "/me/threads", token, **params)
+    except RuntimeError as e:
+        if "topic_tag" not in params:
+            raise
+        log(f"Aviso: Threads rechazó el topic_tag ({e}); se publica sin él.")
+        params.pop("topic_tag")
+        container = threads_request("POST", "/me/threads", token, **params)
     creation_id = container["id"]
     log(f"Contenedor creado: {creation_id}")
 
@@ -489,11 +637,11 @@ def main() -> int:
 
     view_id = pick_view(topic, history)
     log(f"Vista para la imagen: {view_id}")
-    # En el tema "noticias" los datos son las últimas mejoras de la app, no las tasas.
-    data = fetch_news() if topic["id"] == "noticias" else fetch_real_data()
+    # En el tema "novedades" los datos son las últimas mejoras de la app, no las tasas.
+    data = fetch_news() if topic["datos"] == "noticias" else fetch_real_data()
     text = generate_post(topic, history, data, view_id)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
-    reply_text = random.choice(REPLY_TEMPLATES).format(link=topic["link"])
+    reply_text = topic["respuesta"].format(link=topic["link"])
     log(f"Respuesta con el enlace:\n{reply_text}\n")
     image = capture_view(view_id)
 
