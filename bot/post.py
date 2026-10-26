@@ -108,20 +108,19 @@ TEMAS = [
     {
         "id": "mercado",
         "angulo": (
-            "Formato EN DESARROLLO. Habla como el creador de la app contando que estás construyendo "
-            "la sección Mercado: comparar precios de productos básicos (harina, arroz, huevos, "
-            "aceite…) entre supermercados, armar tu lista y que te diga en qué supermercado te sale "
-            "más barata, y comparar precios entre países. Los precios los reporta la comunidad, así "
-            "que todavía faltan muchos. Puedes citar 1 o 2 precios reales de los datos con su "
-            "supermercado (ej. 'harina PAN desde 0,98 $ en …'). Cuenta que está en desarrollo y "
-            "pide algo concreto: que reporten un precio que vieron o qué producto o supermercado "
-            "quieren ver. No digas que ya está terminada."
+            "Formato EN DESARROLLO. Habla como el creador de la app contando, a grandes rasgos, que "
+            "estás construyendo la sección Mercado: una comparativa de productos básicos del "
+            "supermercado (harina, arroz, huevos, aceite…) para ver dónde sale más barato y armar "
+            "tu lista de compras. Deja claro que todavía no está terminada y que la estás armando "
+            "poco a poco. NO menciones precios, cifras, supermercados concretos ni funciones "
+            "detalladas. Cierra pidiendo algo concreto: qué productos les gustaría poder comparar "
+            "o qué les ayudaría más al hacer el mercado."
         ),
         "link": f"{SITE}/mercado",
         "espacio": 4,
         "vistas": ["mercado"],
-        "respuesta": "Mira los precios y reporta los que veas 👉 {link}",
-        "datos": "mercado",
+        "respuesta": "Así va quedando, todavía en construcción 👉 {link}",
+        "datos": "ninguno",
     },
     {
         "id": "recorrido",
@@ -146,8 +145,9 @@ TEMAS = [
                      "ayer y cuánto cambió", "vista": "cot_dolar"},
             {"idea": "el botón Compartir tasa en Cotizaciones, para mandarle la tasa del día a "
                      "quien te pregunte", "vista": "cot_brecha"},
-            {"idea": "Armar mi lista en Mercado: agregas los productos que vas a comprar y te dice "
-                     "en qué supermercado te sale más barato (en desarrollo)", "vista": "mercado"},
+            {"idea": "la sección Mercado, que todavía estoy construyendo: una comparativa de "
+                     "productos del supermercado para armar tu lista de compras (sin mencionar "
+                     "precios)", "vista": "mercado"},
             {"idea": "la sección Noticias: ahí anoto cada mejora que le hago a la app, en orden",
              "vista": "noticias"},
             {"idea": "instalar Cotizados en la pantalla de inicio del teléfono desde el navegador, "
@@ -228,7 +228,8 @@ VISTAS = {
     "calculadora": {"path": "/calculator", "hasta": "AÑADIR TASA", "desc": "la calculadora convirtiendo dólares BCV a bolívares"},
     "noticias": {"path": "/noticias", "alto": 495, "desc": "la sección Noticias con las últimas mejoras de la app"},
     # "pais": la página elige el país por ubicación; se fuerza Venezuela en el selector.
-    "mercado": {"path": "/mercado", "pais": "VE", "alto": 760, "desc": "la sección Mercado con precios de supermercados en Venezuela"},
+    # Recortada antes de la lista de productos: la sección no está terminada y no se muestran precios.
+    "mercado": {"path": "/mercado", "pais": "VE", "alto": 440, "desc": "la sección Mercado (en construcción)"},
 }
 
 # Tema de Threads (topic tag) con el que se etiqueta cada post; reemplaza a los hashtags del texto.
@@ -467,28 +468,6 @@ def select_country(page, code: str) -> None:
     page.wait_for_timeout(300)
     page.select_option("main select", code)
     page.wait_for_timeout(2500)  # carga los precios del país
-
-
-def fetch_market() -> str | None:
-    """Precios de /mercado en Venezuela (reportados por la comunidad) para el tema "mercado"."""
-    from playwright.sync_api import sync_playwright
-
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            page = browser.new_page(locale="es-VE")
-            page.goto(f"{SITE}/mercado", wait_until="networkidle", timeout=45000)
-            select_country(page, "VE")
-            text = page.inner_text("main")
-            browser.close()
-        # Sin la lista de países del selector, que no aporta nada.
-        lines = [l.strip() for l in text.splitlines() if l.strip() and not re.match(r"^\W+ \w", l.strip())]
-        clean = "\n".join(lines)
-        log(f"Mercado leído:\n{clean[:1500]}\n")
-        return clean[:2000]
-    except Exception as e:  # noqa: BLE001
-        log(f"Aviso: no se pudo leer el mercado ({e}).")
-        return None
 
 
 def pick_view(topic: dict, history: list) -> str:
@@ -831,7 +810,7 @@ def main() -> int:
     view_id = pick_view(topic, history)
     log(f"Vista para la imagen: {view_id}")
     # Según el tema, los datos son las tasas, las mejoras de la app o los precios del mercado.
-    fetchers = {"noticias": fetch_news, "mercado": fetch_market, "tasas": fetch_real_data}
+    fetchers = {"noticias": fetch_news, "tasas": fetch_real_data, "ninguno": lambda: None}
     data = fetchers[topic["datos"]]()
     text = generate_post(topic, history, data, view_id)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
