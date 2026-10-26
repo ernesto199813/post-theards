@@ -2,8 +2,11 @@
 Bot diario de Threads para Cotizados (https://cotizados.vercel.app)
 
 Flujo:
-  1. Elige el tema siguiente al del último post (rota por todos los formatos narrativos:
-     noticia rápida, ¿cuánto es?, debate, detrás de cámaras, escena, brecha, truco).
+  1. Lee las estadísticas de los posts de los últimos 14 días (vistas, likes, respuestas...)
+     y elige el formato narrativo (noticia rápida, ¿cuánto es?, mercado en desarrollo, cómo
+     funciona, detrás de cámaras, escena, brecha, truco) por sorteo ponderado según cómo le ha
+     ido a cada uno.
+     Los mejores posts se le pasan a la IA como referencia.
   2. Lee las tasas reales del día: de COTIZADOS_API_URL si existe, o abriendo
      /cotizaciones en un navegador sin interfaz (la página carga los datos con JavaScript),
      y calcula en Python montos de ejemplo, variación y brecha (la IA no calcula cifras).
@@ -23,6 +26,9 @@ Variables de entorno:
   THREADS_TOPIC_TAG     (opcional)    tema de Threads de cada post, por defecto DólarBCV
   DRY_RUN=true          (opcional)    genera el post pero no lo publica
   FORCE_REFRESH=true    (opcional)    fuerza la renovación del token
+
+  El token necesita el permiso threads_manage_insights para leer estadísticas.
+  python bot/post.py --stats  muestra el rendimiento por formato sin publicar nada.
 
   En local se pueden poner en un archivo .env en la raíz del repo (no se sube a GitHub).
 """
@@ -100,16 +106,58 @@ TEMAS = [
         "datos": "tasas",
     },
     {
-        "id": "debate",
+        "id": "mercado",
         "angulo": (
-            "Formato DEBATE. Lanza UNA pregunta que divida opiniones sobre el día a día con dos "
-            "monedas (ej. ¿cobrar a BCV o a paralelo?, ¿vuelto en bolívares o en caramelos?, "
-            "¿precios en $ o en Bs en los negocios?, ¿pago móvil o efectivo?). Toma una postura "
-            "ligera y con humor para provocar que la gente responda. No hables de la app."
+            "Formato EN DESARROLLO. Habla como el creador de la app contando que estás construyendo "
+            "la sección Mercado: comparar precios de productos básicos (harina, arroz, huevos, "
+            "aceite…) entre supermercados, armar tu lista y que te diga en qué supermercado te sale "
+            "más barata, y comparar precios entre países. Los precios los reporta la comunidad, así "
+            "que todavía faltan muchos. Puedes citar 1 o 2 precios reales de los datos con su "
+            "supermercado (ej. 'harina PAN desde 0,98 $ en …'). Cuenta que está en desarrollo y "
+            "pide algo concreto: que reporten un precio que vieron o qué producto o supermercado "
+            "quieren ver. No digas que ya está terminada."
         ),
-        "link": f"{SITE}/cotizaciones",
-        "vistas": ["cot_brecha", "cot_binance"],
-        "respuesta": "Por si quieres ver cómo están las tasas ahorita 👉 {link}",
+        "link": f"{SITE}/mercado",
+        "espacio": 4,
+        "vistas": ["mercado"],
+        "respuesta": "Mira los precios y reporta los que veas 👉 {link}",
+        "datos": "mercado",
+    },
+    {
+        "id": "recorrido",
+        "angulo": (
+            "Formato CÓMO FUNCIONA. Habla como el creador explicando UNA parte de la app (la de la "
+            "idea de hoy) para que la gente entienda qué puede hacer con ella. Empieza por el "
+            "problema que resuelve, no por el nombre de la sección. Luego cómo se usa, en 2 o 3 "
+            "pasos o frases cortas. Cierra con una pregunta corta sobre si la conocían o cómo la "
+            "usarían. Describe solo lo que dice la idea de hoy: no agregues pasos, botones, apps "
+            "ni detalles que no estén ahí."
+        ),
+        # Una parte de la app por post, con la captura que la muestra (ver pick_idea).
+        "ideas": [
+            {"idea": "la Calculadora: escribes un monto y lo ves al instante en bolívares, dólares "
+                     "BCV, USDT, euros y pesos colombianos; puedes añadir más tasas", "vista": "calculadora"},
+            {"idea": "la Tasa Libre de la calculadora: calcular con tu propia tasa, la que de verdad "
+                     "te dieron, sin depender del BCV ni de Binance", "vista": "calculadora"},
+            {"idea": "la tarjeta de Brecha en Cotizaciones: cuánto se separan el BCV y el Binance "
+                     "P2P en porcentaje y en bolívares, con un botón para ver la gráfica del año",
+             "vista": "cot_brecha"},
+            {"idea": "las tarjetas del dólar y el euro BCV en Cotizaciones: la tasa de hoy, la de "
+                     "ayer y cuánto cambió", "vista": "cot_dolar"},
+            {"idea": "el botón Compartir tasa en Cotizaciones, para mandarle la tasa del día a "
+                     "quien te pregunte", "vista": "cot_brecha"},
+            {"idea": "Armar mi lista en Mercado: agregas los productos que vas a comprar y te dice "
+                     "en qué supermercado te sale más barato (en desarrollo)", "vista": "mercado"},
+            {"idea": "la sección Noticias: ahí anoto cada mejora que le hago a la app, en orden",
+             "vista": "noticias"},
+            {"idea": "instalar Cotizados en la pantalla de inicio del teléfono desde el navegador, "
+                     "sin tienda de apps y sin ocupar casi espacio", "vista": "calculadora"},
+            {"idea": "la sección Comentarios: cualquiera puede mandar una idea o reportar un error "
+                     "y yo leo todos los mensajes", "vista": "cot_dolar"},
+        ],
+        "link": SITE,
+        "vistas": ["calculadora", "cot_brecha"],
+        "respuesta": "Pruébala tú mismo 👉 {link}",
         "datos": "tasas",
     },
     {
@@ -121,6 +169,9 @@ TEMAS = [
             "esa mejora."
         ),
         "link": f"{SITE}/noticias",
+        # Es el formato que más vistas trae, pero las novedades cambian poco: como mucho una vez
+        # cada 4 posts para no repetirlas.
+        "espacio": 4,
         "vistas": ["noticias", "calculadora"],
         "respuesta": "Aquí está todo lo nuevo 👉 {link}",
         "datos": "noticias",
@@ -156,9 +207,9 @@ TEMAS = [
         "id": "truco",
         "angulo": (
             "Formato TRUCO ÚTIL. Un truco práctico y concreto para quien cobra o paga en bolívares y "
-            "dólares (o para emprendedores que actualizan precios). Puede ser de finanzas personales "
-            "o de cómo usar Cotizados (agregarla a la pantalla de inicio sin descargar nada, la "
-            "calculadora con varias monedas, la tasa libre). Directo: 'Truco: ...'. Nada de sermones."
+            "dólares (o para emprendedores que actualizan precios), de finanzas personales del día "
+            "a día. Directo: 'Truco: ...'. Nada de sermones. Las funciones de la app tienen su "
+            "propio formato; aquí la app, si aparece, va en media línea al final."
         ),
         "link": SITE,
         "vistas": ["calculadora", "cot_dolar", "cot_euro"],
@@ -176,10 +227,14 @@ VISTAS = {
     "cot_binance": {"path": "/cotizaciones", "tarjeta": 3, "desc": "el precio de compra y venta del USDT en Binance P2P"},
     "calculadora": {"path": "/calculator", "hasta": "AÑADIR TASA", "desc": "la calculadora convirtiendo dólares BCV a bolívares"},
     "noticias": {"path": "/noticias", "alto": 495, "desc": "la sección Noticias con las últimas mejoras de la app"},
+    # "pais": la página elige el país por ubicación; se fuerza Venezuela en el selector.
+    "mercado": {"path": "/mercado", "pais": "VE", "alto": 760, "desc": "la sección Mercado con precios de supermercados en Venezuela"},
 }
 
 # Tema de Threads (topic tag) con el que se etiqueta cada post; reemplaza a los hashtags del texto.
 TOPIC_TAG = os.getenv("THREADS_TOPIC_TAG") or "DólarBCV"
+# Métricas de cada post que se leen de la API de Threads (permiso threads_manage_insights).
+METRICAS = ["views", "likes", "replies", "reposts", "quotes", "shares"]
 
 SYSTEM_PROMPT = f"""Eres la persona venezolana que creó Cotizados ({SITE}), una web/app gratuita para
 ver la tasa del BCV, el USDT en Binance P2P y convertir montos. Escribes en tu cuenta personal de
@@ -226,7 +281,7 @@ FRASES_PROHIBIDAS = [
     r"aqu[ií] abajo",
     r"te dejo el enlace",
     r"^\W*¿sab[ií]as que",
-    r"^\W*¿cansad[oa] de",
+    r"^\W*cansad[oa] de",
     r"hacerte la vida",
     r"al vuelo",
 ]
@@ -248,16 +303,106 @@ def load_history() -> list:
 def save_history(history: list) -> None:
     HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
     HISTORY_FILE.write_text(
-        json.dumps(history[-60:], ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(history[-150:], ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
 
+def post_age_hours(h: dict) -> float:
+    return (dt.datetime.now(TZ_VE) - dt.datetime.fromisoformat(h["fecha"])).total_seconds() / 3600
+
+
+def update_stats(history: list, token: str) -> None:
+    """Lee de la API de Threads las estadísticas de los posts de los últimos 14 días y las
+    guarda en cada entrada del historial ("stats"). Requiere el permiso threads_manage_insights;
+    si el token no lo tiene, avisa y sigue sin estadísticas."""
+    actualizados = 0
+    for h in history:
+        if not h.get("post_id") or post_age_hours(h) > 14 * 24:
+            continue
+        try:
+            data = threads_request(
+                "GET", f"/{h['post_id']}/insights", token, metric=",".join(METRICAS)
+            )
+        except RuntimeError as e:
+            log(f"Aviso: no se pudieron leer las estadísticas ({e}).")
+            return
+        h["stats"] = {m["name"]: m["values"][0]["value"] for m in data.get("data", [])}
+        # La respuesta con el enlace la publica el propio bot: no cuenta como respuesta del público.
+        if h.get("reply_id") and h["stats"].get("replies"):
+            h["stats"]["replies"] -= 1
+        h["stats_fecha"] = dt.datetime.now(TZ_VE).isoformat(timespec="minutes")
+        actualizados += 1
+    log(f"Estadísticas actualizadas de {actualizados} posts.")
+
+
+def engagement(h: dict) -> float:
+    """Puntaje de un post: reproducciones más interacciones (una respuesta vale por 10 vistas)."""
+    s = h.get("stats") or {}
+    return (s.get("views", 0) + 5 * s.get("likes", 0)
+            + 10 * (s.get("replies", 0) + s.get("reposts", 0) + s.get("quotes", 0) + s.get("shares", 0)))
+
+
+def measured(history: list) -> list:
+    """Posts con estadísticas y al menos 24 h publicados (antes no han terminado de moverse)."""
+    return [h for h in history if h.get("stats") and post_age_hours(h) >= 24]
+
+
+def stats_report(history: list) -> str:
+    """Promedios por formato, para el log de cada ejecución."""
+    lines = []
+    for t in TEMAS:
+        posts = [h for h in measured(history) if h.get("tema") == t["id"]]
+        if posts:
+            views = sum(h["stats"].get("views", 0) for h in posts) / len(posts)
+            replies = sum(h["stats"].get("replies", 0) for h in posts) / len(posts)
+            lines.append(f"  {t['id']:<15} {len(posts):>2} posts | {views:6.0f} vistas | "
+                         f"{replies:4.1f} respuestas | puntaje {sum(map(engagement, posts)) / len(posts):6.0f}")
+        else:
+            lines.append(f"  {t['id']:<15}  sin datos")
+    return "\n".join(lines)
+
+
 def pick_topic(history: list) -> dict:
-    """Toma el tema siguiente al del último post, así varios posts al día no repiten tema."""
-    ids = [t["id"] for t in TEMAS]
-    last = history[-1].get("tema") if history else None
-    idx = (ids.index(last) + 1) % len(TEMAS) if last in ids else 0
-    return TEMAS[idx]
+    """Elige el formato por sorteo ponderado según su puntaje medio, sin repetir los de los
+    últimos posts (2, o "espacio" si el tema lo define). Los formatos con menos de 3 posts medidos
+    reciben el mejor puntaje para que se sigan probando, y un 20 % de las veces se elige al azar
+    para no encasillarse. El peso es la raíz del puntaje: un post viral no acapara la rotación."""
+    def libre(t: dict) -> bool:
+        return t["id"] not in {h.get("tema") for h in history[-t.get("espacio", 2):]}
+
+    opciones = [t for t in TEMAS if libre(t)] or TEMAS
+    datos = measured(history)
+    medias = {}
+    for t in TEMAS:
+        posts = [h for h in datos if h.get("tema") == t["id"]]
+        if len(posts) >= 3:
+            medias[t["id"]] = sum(map(engagement, posts[-10:])) / len(posts[-10:])
+    if not medias or random.random() < 0.2:
+        return random.choice(opciones)
+    mejor = max(medias.values())
+    pesos = [max(medias.get(t["id"], mejor), 1) ** 0.5 for t in opciones]
+    return random.choices(opciones, weights=pesos)[0]
+
+
+def pick_idea(topic: dict, history: list) -> dict | None:
+    """Para temas con lista de "ideas", elige una que no se haya usado en los últimos 30 posts.
+    Cada idea es {"idea": texto, "vista": captura opcional que la muestra}."""
+    if not topic.get("ideas"):
+        return None
+    usadas = {h.get("idea") for h in history[-30:]}
+    return random.choice([i for i in topic["ideas"] if i["idea"] not in usadas] or topic["ideas"])
+
+
+def best_posts(history: list, n: int = 3) -> str:
+    """Los posts con mejor puntaje, para que la IA vea qué conecta con el público."""
+    # Solo formatos actuales y sin muletillas, para no premiar posts de la plantilla antigua.
+    ids = {t["id"] for t in TEMAS}
+    candidatos = [h for h in measured(history) if h.get("tema") in ids and not post_problems(h["texto"])]
+    top = sorted(candidatos, key=engagement, reverse=True)[:n]
+    return "\n---\n".join(
+        f"[{h['stats'].get('views', 0)} vistas, {h['stats'].get('replies', 0)} respuestas]\n{h['texto']}"
+        for h in top
+    )
 
 
 def fetch_from_api(url: str) -> str | None:
@@ -314,6 +459,38 @@ def fetch_news() -> str | None:
         return None
 
 
+def select_country(page, code: str) -> None:
+    """En /mercado el país sale por ubicación (desde GitHub Actions no es Venezuela). La opción
+    puede venir marcada sin aplicarse, así que se cambia a otra y luego a la pedida."""
+    otro = "MX" if code != "MX" else "VE"
+    page.select_option("main select", otro)
+    page.wait_for_timeout(300)
+    page.select_option("main select", code)
+    page.wait_for_timeout(2500)  # carga los precios del país
+
+
+def fetch_market() -> str | None:
+    """Precios de /mercado en Venezuela (reportados por la comunidad) para el tema "mercado"."""
+    from playwright.sync_api import sync_playwright
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page(locale="es-VE")
+            page.goto(f"{SITE}/mercado", wait_until="networkidle", timeout=45000)
+            select_country(page, "VE")
+            text = page.inner_text("main")
+            browser.close()
+        # Sin la lista de países del selector, que no aporta nada.
+        lines = [l.strip() for l in text.splitlines() if l.strip() and not re.match(r"^\W+ \w", l.strip())]
+        clean = "\n".join(lines)
+        log(f"Mercado leído:\n{clean[:1500]}\n")
+        return clean[:2000]
+    except Exception as e:  # noqa: BLE001
+        log(f"Aviso: no se pudo leer el mercado ({e}).")
+        return None
+
+
 def pick_view(topic: dict, history: list) -> str:
     """Elige una vista del tema, evitando repetir la imagen del post anterior."""
     last = history[-1].get("vista") if history else None
@@ -343,6 +520,8 @@ def capture_view(view_id: str) -> pathlib.Path | None:
                 )
             except Exception:  # noqa: BLE001
                 pass  # /noticias no tiene cifras
+            if "pais" in view:
+                select_country(page, view["pais"])
             page.wait_for_timeout(1500)  # deja terminar las animaciones de las cifras
 
             if "tarjeta" in view:
@@ -525,6 +704,12 @@ def generate_post(topic: dict, history: list, real_data: str | None, view_id: st
         f"El post lleva una imagen de {VISTAS[view_id]['desc']} (no la describas).\n\n"
         f"Primeras líneas de los últimos posts (escribe algo que no se parezca a ninguna):\n{ganchos}"
     )
+    mejores = best_posts(history)
+    if mejores:
+        user_msg += (
+            "\n\nLos posts que mejor han funcionado con el público. Fíjate en qué los hizo "
+            f"conectar (tono, gancho, largo), pero no copies sus frases:\n{mejores}"
+        )
 
     text = ""
     for intento in range(3):
@@ -632,13 +817,22 @@ def main() -> int:
     log(f"IA: Gemini ({GEMINI_MODEL})")
 
     history = load_history()
+    if token:
+        update_stats(history, token)
+    log(f"Rendimiento por formato (posts con más de 24 h):\n{stats_report(history)}")
     topic = pick_topic(history)
-    log(f"Tema del día: {topic['id']}")
+    idea = pick_idea(topic, history)
+    log(f"Tema del día: {topic['id']}" + (f" (idea: {idea['idea']})" if idea else ""))
+    if idea:
+        topic = {**topic, "angulo": f"{topic['angulo']}\nIdea de hoy: {idea['idea']}."}
+        if idea.get("vista"):
+            topic["vistas"] = [idea["vista"]]
 
     view_id = pick_view(topic, history)
     log(f"Vista para la imagen: {view_id}")
-    # En el tema "novedades" los datos son las últimas mejoras de la app, no las tasas.
-    data = fetch_news() if topic["datos"] == "noticias" else fetch_real_data()
+    # Según el tema, los datos son las tasas, las mejoras de la app o los precios del mercado.
+    fetchers = {"noticias": fetch_news, "mercado": fetch_market, "tasas": fetch_real_data}
+    data = fetchers[topic["datos"]]()
     text = generate_post(topic, history, data, view_id)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
     reply_text = topic["respuesta"].format(link=topic["link"])
@@ -675,6 +869,7 @@ def main() -> int:
             "post_id": post_id,
             "reply_id": reply_id,
             "vista": view_id,
+            "idea": idea["idea"] if idea else None,
             "texto": text,
         }
     )
@@ -683,5 +878,20 @@ def main() -> int:
     return 0
 
 
+def print_stats() -> int:
+    """python bot/post.py --stats: actualiza las estadísticas, imprime el informe y los mejores
+    posts, y guarda el historial. No publica nada."""
+    token = os.getenv("THREADS_ACCESS_TOKEN", "").strip()
+    if not token:
+        log("Falta THREADS_ACCESS_TOKEN.")
+        return 1
+    history = load_history()
+    update_stats(history, token)
+    save_history(history)
+    print(f"\nRendimiento por formato (posts con más de 24 h):\n{stats_report(history)}")
+    print(f"\nMejores posts:\n{best_posts(history, 5) or '(aún no hay)'}")
+    return 0
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(print_stats() if "--stats" in sys.argv else main())
