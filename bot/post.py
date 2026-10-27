@@ -90,7 +90,9 @@ TEMAS = [
             "corta y fácil de responder."
         ),
         "link": f"{SITE}/cotizaciones",
-        "vistas": ["cot_dolar", "cot_euro"],
+        # Carrusel de 2: la tasa del día y su gráfica.
+        "imagenes": 2,
+        "vistas": ["cot_dolar", "cot_euro", "cot_resumen", "grafica_dolar", "grafica_euro"],
         "respuesta": "Todas las tasas de hoy en un solo sitio 👉 {link}",
         "datos": "tasas",
     },
@@ -103,7 +105,7 @@ TEMAS = [
             "en el mercado, la panadería o la farmacia."
         ),
         "link": f"{SITE}/calculator",
-        "vistas": ["calculadora", "cot_brecha"],
+        "vistas": ["calculadora", "cot_brecha", "cot_binance", "cot_resumen"],
         "respuesta": "Calcula tu monto exacto aquí 👉 {link}",
         "datos": "tasas",
     },
@@ -120,7 +122,7 @@ TEMAS = [
         ),
         "link": f"{SITE}/mercado",
         "espacio": 4,
-        "vistas": ["mercado"],
+        "vistas": ["mercado", "mercado_lista"],
         "respuesta": "Así va quedando, todavía en construcción 👉 {link}",
         "datos": "ninguno",
     },
@@ -137,34 +139,34 @@ TEMAS = [
         # Una parte de la app por post, con la captura que la muestra (ver pick_idea).
         "ideas": [
             {"idea": "la Calculadora: escribes un monto y lo ves al instante en bolívares, dólares "
-                     "BCV, USDT, euros y pesos colombianos; puedes añadir más tasas", "vista": "calculadora"},
+                     "BCV, USDT, euros y pesos colombianos; puedes añadir más tasas", "vistas": ["calculadora"]},
             {"idea": "la Tasa Libre de la calculadora: calcular con tu propia tasa, la que de verdad "
-                     "te dieron, sin depender del BCV ni de Binance", "vista": "calculadora"},
+                     "te dieron, sin depender del BCV ni de Binance", "vistas": ["calculadora"]},
             {"idea": "la tarjeta de Brecha en Cotizaciones: cuánto se separan el BCV y el Binance "
-                     "P2P en porcentaje y en bolívares", "vista": "cot_brecha"},
+                     "P2P en porcentaje y en bolívares", "vistas": ["cot_brecha", "cot_resumen"]},
             {"idea": "la gráfica anual de la Brecha (botón 'Ver gráfica anual' en Cotizaciones): ves "
                      "lo volátil que ha estado la brecha en lo que va de año, con la actual, el "
                      "promedio, la máxima y la mínima, por 1 mes, 3 meses, 6 meses o 1 año",
-             "vista": "grafica_brecha"},
+             "vistas": ["grafica_brecha"]},
             {"idea": "la vista de Inicio cuando inicias sesión: ahí llevas tus gastos del mes y "
                      "sabes en qué se te va la plata (gratis, solo necesitas crear tu cuenta)",
-             "vista": None},
+             "vistas": []},
             {"idea": "las tarjetas del dólar y el euro BCV en Cotizaciones: la tasa de hoy, la de "
-                     "ayer y cuánto cambió", "vista": "cot_dolar"},
+                     "ayer y cuánto cambió", "vistas": ["cot_dolar", "cot_euro", "cot_resumen"]},
             {"idea": "el botón Compartir tasa en Cotizaciones, para mandarle la tasa del día a "
-                     "quien te pregunte", "vista": "cot_brecha"},
+                     "quien te pregunte", "vistas": ["cot_resumen", "cot_brecha"]},
             {"idea": "la sección Mercado, que todavía estoy construyendo: una comparativa de "
                      "productos del supermercado para armar tu lista de compras (sin mencionar "
-                     "precios)", "vista": "mercado"},
+                     "precios)", "vistas": ["mercado", "mercado_lista"]},
             {"idea": "la sección Noticias: ahí anoto cada mejora que le hago a la app, en orden",
-             "vista": "noticias"},
+             "vistas": ["noticias"]},
             {"idea": "instalar Cotizados en la pantalla de inicio del teléfono desde el navegador, "
-                     "sin tienda de apps y sin ocupar casi espacio", "vista": "calculadora"},
+                     "sin tienda de apps y sin ocupar casi espacio", "vistas": ["calculadora", "cot_resumen"]},
             {"idea": "la sección Comentarios: cualquiera puede mandar una idea o reportar un error "
-                     "y yo leo todos los mensajes", "vista": "cot_dolar"},
+                     "y yo leo todos los mensajes", "vistas": ["cot_resumen", "calculadora"]},
         ],
         "link": SITE,
-        "vistas": ["calculadora", "cot_brecha"],
+        "vistas": ["calculadora", "cot_resumen"],
         "respuesta": "Pruébala tú mismo 👉 {link}",
         "datos": "tasas",
     },
@@ -180,7 +182,9 @@ TEMAS = [
         # Es el formato que más vistas trae, pero las novedades cambian poco: como mucho una vez
         # cada 4 posts para no repetirlas.
         "espacio": 4,
-        "vistas": ["noticias", "calculadora"],
+        # Carrusel de 3, como el post manual que más vistas tuvo.
+        "imagenes": 3,
+        "vistas": ["noticias", "calculadora", "cot_resumen", "grafica_dolar", "grafica_brecha", "mercado"],
         "respuesta": "Aquí está todo lo nuevo 👉 {link}",
         "datos": "noticias",
     },
@@ -195,7 +199,7 @@ TEMAS = [
             "corta o una pregunta. La app, si aparece, en media línea al final."
         ),
         "link": f"{SITE}/calculator",
-        "vistas": ["calculadora", "cot_dolar"],
+        "vistas": ["calculadora", "cot_euro", "cot_resumen", "cot_binance"],
         "respuesta": "Para la próxima, la calculadora 👉 {link}",
         "datos": "tasas",
     },
@@ -210,7 +214,8 @@ TEMAS = [
             "una pregunta corta."
         ),
         "link": f"{SITE}/cotizaciones",
-        "vistas": ["cot_brecha", "grafica_brecha"],
+        "imagenes": 2,
+        "vistas": ["cot_brecha", "grafica_brecha", "grafica_binance"],
         "respuesta": "La brecha actualizada aquí 👉 {link}",
         "datos": "tasas",
     },
@@ -223,27 +228,42 @@ TEMAS = [
             "propio formato; aquí la app, si aparece, va en media línea al final."
         ),
         "link": SITE,
-        "vistas": ["calculadora", "cot_dolar", "cot_euro"],
+        "vistas": ["calculadora", "cot_resumen", "grafica_dolar", "grafica_euro", "cot_euro"],
         "respuesta": "Aquí la tienes 👉 {link}",
         "datos": "tasas",
     },
 ]
 
-# Capturas posibles para la imagen del post. "tarjeta" es el índice de la tarjeta en /cotizaciones
-# (0 brecha, 1 dólar BCV, 2 euro BCV, 3 Binance); "hasta" es el texto donde termina el recorte.
+# Capturas posibles para las imágenes del post. Cada una se toma en modo claro u oscuro (se
+# alterna entre posts), así que una misma vista da dos imágenes distintas.
+#   "tarjeta": índice de la tarjeta en /cotizaciones (0 brecha, 1 dólar BCV, 2 euro BCV, 3 Binance);
+#              con "hasta_tarjeta" se recorta desde arriba hasta el final de esa tarjeta.
+#   "hasta":   texto donde termina el recorte.
+#   "grafica": índice de la tarjeta cuya "Ver gráfica anual" se abre; "rangos" son los periodos
+#              posibles de la gráfica (se elige uno al azar).
+#   "clic":    texto que se pulsa antes de capturar.
+#   "pais":    la página elige el país por ubicación; se fuerza Venezuela en el selector.
+RANGOS = {"1M": "el último mes", "3M": "los últimos 3 meses", "6M": "los últimos 6 meses", "1A": "el último año"}
 VISTAS = {
     "cot_brecha": {"path": "/cotizaciones", "tarjeta": 0, "desc": "la brecha cambiaria entre el BCV y Binance P2P"},
     "cot_dolar": {"path": "/cotizaciones", "tarjeta": 1, "desc": "la tasa del dólar BCV de hoy y su cambio"},
     "cot_euro": {"path": "/cotizaciones", "tarjeta": 2, "desc": "la tasa del euro BCV de hoy y su cambio"},
     "cot_binance": {"path": "/cotizaciones", "tarjeta": 3, "desc": "el precio de compra y venta del USDT en Binance P2P"},
+    "cot_resumen": {"path": "/cotizaciones", "hasta_tarjeta": 2, "desc": "las tasas del día: brecha, dólar BCV y euro BCV"},
     "calculadora": {"path": "/calculator", "hasta": "AÑADIR TASA", "desc": "la calculadora convirtiendo dólares BCV a bolívares"},
     "noticias": {"path": "/noticias", "alto": 495, "desc": "la sección Noticias con las últimas mejoras de la app"},
-    # "abrir": texto del botón que se pulsa antes de capturar; se recorta el panel que se abre.
-    "grafica_brecha": {"path": "/cotizaciones", "abrir": "Ver gráfica anual", "alto": 980,
-                       "desc": "la gráfica de la brecha BCV vs Binance en el último año, con actual, promedio, máxima y mínima"},
-    # "pais": la página elige el país por ubicación; se fuerza Venezuela en el selector.
-    # Recortada antes de la lista de productos: la sección no está terminada y no se muestran precios.
+    "grafica_brecha": {"path": "/cotizaciones", "grafica": 0, "rangos": ["1A"],
+                       "desc": "la gráfica de la brecha BCV vs Binance en {rango}, con actual, promedio, máxima y mínima"},
+    "grafica_dolar": {"path": "/cotizaciones", "grafica": 1, "rangos": ["1M", "3M", "6M", "1A"],
+                      "desc": "la gráfica del dólar BCV en {rango}"},
+    "grafica_euro": {"path": "/cotizaciones", "grafica": 2, "rangos": ["1M", "3M", "6M", "1A"],
+                     "desc": "la gráfica del euro BCV en {rango}"},
+    "grafica_binance": {"path": "/cotizaciones", "grafica": 3, "rangos": ["1M", "3M", "6M", "1A"],
+                        "desc": "la gráfica del USDT en Binance P2P en {rango}"},
+    # Mercado no está terminado: se recorta antes de la lista de productos para no mostrar precios.
     "mercado": {"path": "/mercado", "pais": "VE", "alto": 440, "desc": "la sección Mercado (en construcción)"},
+    "mercado_lista": {"path": "/mercado", "pais": "VE", "clic": "Armar mi lista", "alto": 600,
+                      "desc": "la pestaña Armar mi lista de la sección Mercado (en construcción)"},
 }
 
 # Tema de Threads (topic tag) con el que se etiqueta cada post; reemplaza a los hashtags del texto.
@@ -428,7 +448,7 @@ def pick_topic(history: list) -> dict:
 
 def pick_idea(topic: dict, history: list) -> dict | None:
     """Para temas con lista de "ideas", elige una que no se haya usado en los últimos 30 posts.
-    Cada idea es {"idea": texto, "vista": captura opcional que la muestra}."""
+    Cada idea es {"idea": texto, "vistas": capturas que la muestran ([] = post sin imagen)}."""
     if not topic.get("ideas"):
         return None
     usadas = {h.get("idea") for h in history[-30:]}
@@ -527,95 +547,137 @@ def select_country(page, code: str) -> None:
     page.wait_for_timeout(2500)  # carga los precios del país
 
 
-def pick_view(topic: dict, history: list) -> str | None:
-    """Elige una vista del tema, evitando repetir la imagen del post anterior.
-    None = post sin imagen (partes de la app que no se pueden capturar, como el Inicio con sesión)."""
-    last = history[-1].get("vista") if history else None
-    opciones = [v for v in topic["vistas"] if v != last] or topic["vistas"]
-    return random.choice(opciones)
+def used_views(h: dict) -> list:
+    """Vistas usadas en un post del historial (los posts antiguos guardaban solo "vista")."""
+    return h.get("vistas") or ([h["vista"]] if h.get("vista") else [])
 
 
-def capture_view(view_id: str | None) -> pathlib.Path | None:
-    """Captura una vista de la web (ver VISTAS) como PNG en public/tasas.png."""
+def plan_images(topic: dict, history: list) -> tuple[list[dict], str]:
+    """Elige las imágenes del post: "imagenes" vistas distintas del tema (1 si no lo define),
+    priorizando las que no salieron en los últimos 6 posts y, si no alcanza, las usadas hace más
+    tiempo. Cada imagen es {"vista", "rango"} (el rango solo en gráficas). El modo (claro u
+    oscuro) se alterna con el del post anterior, para que la misma vista no se vea igual."""
+    estilo = "light" if (history[-1].get("estilo") if history else "dark") == "dark" else "dark"
+    if not topic["vistas"]:
+        return [], estilo
+
+    def last_use(v: str) -> int:
+        for i, h in enumerate(reversed(history)):
+            if v in used_views(h):
+                return i
+        return len(history) + 1
+
+    vistas = list(topic["vistas"])
+    random.shuffle(vistas)
+    frescas = [v for v in vistas if last_use(v) >= 6]
+    usadas = sorted((v for v in vistas if last_use(v) < 6), key=last_use, reverse=True)
+    elegidas = (frescas + usadas)[: topic.get("imagenes", 1)]
+    shots = []
+    for v in elegidas:
+        shot = {"vista": v}
+        if VISTAS[v].get("rangos"):
+            shot["rango"] = random.choice(VISTAS[v]["rangos"])
+        shots.append(shot)
+    return shots, estilo
+
+
+def shot_desc(shot: dict) -> str:
+    return VISTAS[shot["vista"]]["desc"].format(rango=RANGOS.get(shot.get("rango"), ""))
+
+
+def capture_shot(page, shot: dict) -> dict:
+    """Prepara la página para una captura y devuelve el recorte (clip) a fotografiar."""
+    view = VISTAS[shot["vista"]]
+    page.goto(f"{SITE}{view['path']}", wait_until="networkidle", timeout=45000)
+    try:
+        page.wait_for_function(r"() => /\d+[.,]\d{2}/.test(document.body.innerText)", timeout=15000)
+    except Exception:  # noqa: BLE001
+        pass  # /noticias y /mercado no siempre tienen cifras
+    if "pais" in view:
+        select_country(page, view["pais"])
+    if "clic" in view:
+        page.get_by_text(view["clic"]).first.click()
+    page.wait_for_timeout(1500)  # deja terminar las animaciones de las cifras
+
+    if "tarjeta" in view or "hasta_tarjeta" in view:
+        i = view.get("tarjeta", view.get("hasta_tarjeta"))
+        box = page.evaluate(
+            """(i) => {
+                const c = document.querySelectorAll('main [class*="rounded-[28px]"]')[i];
+                if (!c) return null;
+                const r = c.getBoundingClientRect();
+                return {top: r.top + scrollY, bottom: r.bottom + scrollY};
+            }""",
+            i,
+        )
+        if not box:
+            raise RuntimeError(f"no se encontró la tarjeta {i}")
+        # La primera tarjeta (y el resumen) incluyen el aviso "Actualizado: ..." de arriba.
+        top = 0 if i == 0 or "hasta_tarjeta" in view else max(0, box["top"] - 16)
+        return {"x": 0, "y": top, "width": 430, "height": box["bottom"] + 20 - top}
+    if "grafica" in view:
+        page.get_by_text("Ver gráfica anual").nth(view["grafica"]).click()
+        page.wait_for_selector("[role=dialog]", timeout=10000)
+        page.wait_for_timeout(1500)
+        if shot.get("rango"):
+            page.locator("[role=dialog]").get_by_text(shot["rango"], exact=True).click()
+            page.wait_for_timeout(1500)
+        # Del borde superior del panel hasta el eje de fechas de la gráfica.
+        box = page.evaluate(
+            """() => {
+                const d = document.querySelector('[role=dialog]');
+                const r = d.getBoundingClientRect();
+                const svg = [...d.querySelectorAll('svg')].sort((a, b) =>
+                    b.getBoundingClientRect().height - a.getBoundingClientRect().height)[0];
+                const n = [...d.querySelectorAll('p, span, div')]
+                    .filter(e => /^Basado en el hist/.test((e.innerText || '').trim())).pop();
+                const bottom = n ? n.getBoundingClientRect().bottom + 16
+                    : svg ? svg.getBoundingClientRect().bottom + 24 : r.top + 980;
+                return {top: r.top, bottom: Math.min(bottom, r.bottom)};
+            }"""
+        )
+        return {"x": 0, "y": box["top"], "width": 430, "height": box["bottom"] - box["top"]}
+    if "hasta" in view:
+        bottom = page.evaluate(
+            """(t) => {
+                const e = [...document.querySelectorAll('button, a, span')]
+                    .find(e => e.innerText && e.innerText.trim().toUpperCase() === t);
+                return e ? e.getBoundingClientRect().bottom + scrollY : 460;
+            }""",
+            view["hasta"],
+        )
+        return {"x": 0, "y": 0, "width": 430, "height": bottom + 30}
+    return {"x": 0, "y": 0, "width": 430, "height": view["alto"]}
+
+
+def capture_images(shots: list[dict], estilo: str) -> list[pathlib.Path]:
+    """Captura las imágenes del post en public/tasas.png, tasas2.png, ... Si una falla, se
+    publica con las demás."""
     from playwright.sync_api import sync_playwright
 
-    if not view_id:
-        return None
-    view = VISTAS[view_id]
-    out = IMAGE_FILE
-    out.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            # Ventana alta para que la barra de navegación fija no tape las tarjetas de abajo.
-            page = browser.new_page(
-                locale="es-VE", viewport={"width": 430, "height": 1600},
-                device_scale_factor=2, color_scheme="dark",
-            )
-            page.goto(f"{SITE}{view['path']}", wait_until="networkidle", timeout=45000)
+    paths = []
+    if not shots:
+        return paths
+    IMAGE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for n, shot in enumerate(shots, start=1):
+            out = IMAGE_FILE if n == 1 else IMAGE_FILE.with_name(f"tasas{n}.png")
             try:
-                page.wait_for_function(
-                    r"() => /\d+[.,]\d{2}/.test(document.body.innerText)", timeout=15000
+                # Ventana alta para que la barra de navegación fija no tape las tarjetas de abajo.
+                page = browser.new_page(
+                    locale="es-VE", viewport={"width": 430, "height": 1600},
+                    device_scale_factor=2, color_scheme=estilo,
                 )
-            except Exception:  # noqa: BLE001
-                pass  # /noticias no tiene cifras
-            if "pais" in view:
-                select_country(page, view["pais"])
-            page.wait_for_timeout(1500)  # deja terminar las animaciones de las cifras
-
-            if "tarjeta" in view:
-                box = page.evaluate(
-                    """(i) => {
-                        const c = document.querySelectorAll('main [class*="rounded-[28px]"]')[i];
-                        if (!c) return null;
-                        const r = c.getBoundingClientRect();
-                        return {top: r.top + scrollY, bottom: r.bottom + scrollY};
-                    }""",
-                    view["tarjeta"],
-                )
-                if not box:
-                    raise RuntimeError(f"no se encontró la tarjeta {view['tarjeta']}")
-                # La primera tarjeta incluye el aviso "Actualizado: ..." que tiene encima.
-                top = 0 if view["tarjeta"] == 0 else max(0, box["top"] - 16)
-                clip = {"x": 0, "y": top, "width": 430, "height": box["bottom"] + 20 - top}
-            elif "abrir" in view:
-                page.get_by_text(view["abrir"]).first.click()
-                page.wait_for_timeout(2500)  # animación del panel y de la gráfica
-                # Del borde superior del panel hasta la nota "Basado en el histórico…" de abajo.
-                box = page.evaluate(
-                    """() => {
-                        const d = document.querySelector('[role=dialog]');
-                        if (!d) return null;
-                        const n = [...d.querySelectorAll('p, span, div')]
-                            .filter(e => /^Basado en el hist/.test((e.innerText || '').trim())).pop();
-                        const top = d.getBoundingClientRect().top;
-                        return {top, bottom: n ? n.getBoundingClientRect().bottom + 16 : null};
-                    }"""
-                )
-                if not box:
-                    raise RuntimeError(f"no se abrió el panel de '{view['abrir']}'")
-                bottom = box["bottom"] or box["top"] + view["alto"]
-                clip = {"x": 0, "y": box["top"], "width": 430, "height": bottom - box["top"]}
-            elif "hasta" in view:
-                bottom = page.evaluate(
-                    """(t) => {
-                        const e = [...document.querySelectorAll('button, a, span')]
-                            .find(e => e.innerText && e.innerText.trim().toUpperCase() === t);
-                        return e ? e.getBoundingClientRect().bottom + scrollY : 460;
-                    }""",
-                    view["hasta"],
-                )
-                clip = {"x": 0, "y": 0, "width": 430, "height": bottom + 30}
-            else:
-                clip = {"x": 0, "y": 0, "width": 430, "height": view["alto"]}
-
-            page.screenshot(path=str(out), clip=clip, full_page=True)
-            browser.close()
-        log(f"Imagen generada ({view_id}): {out}")
-        return out
-    except Exception as e:  # noqa: BLE001
-        log(f"Aviso: no se pudo generar la imagen {view_id} ({e}).")
-        return None
+                clip = capture_shot(page, shot)
+                page.screenshot(path=str(out), clip=clip, full_page=True)
+                page.close()
+                paths.append(out)
+                log(f"Imagen generada ({shot['vista']} {shot.get('rango', '')} {estilo}): {out}")
+            except Exception as e:  # noqa: BLE001
+                log(f"Aviso: no se pudo generar la imagen {shot['vista']} ({e}).")
+        browser.close()
+    return paths
 
 
 def git(*args: str) -> str:
@@ -626,25 +688,30 @@ def git(*args: str) -> str:
     ).stdout.strip()
 
 
-def publish_image(path: pathlib.Path) -> str:
-    """Sube la imagen al repo (public/tasas.png) y devuelve su URL pública en
+def publish_images(paths: list[pathlib.Path]) -> list[str]:
+    """Sube las imágenes al repo (public/) y devuelve sus URLs públicas en
     raw.githubusercontent.com: la API de Threads solo acepta imágenes desde una URL.
-    Requiere que el repo sea público. La URL lleva el commit para evitar la caché de GitHub."""
-    rel = path.relative_to(ROOT).as_posix()
-    git("add", rel)
-    git("commit", "-m", f"chore: imagen de tasas {dt.datetime.now(TZ_VE):%F}", "--", rel)
-    git("push")
+    Requiere que el repo sea público. Las URLs llevan el commit para evitar la caché de GitHub."""
+    rels = [p.relative_to(ROOT).as_posix() for p in paths]
+    git("add", *rels)
+    # Si las imágenes son idénticas a las ya subidas no hay nada que commitear.
+    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
+        git("commit", "-m", f"chore: imagen de tasas {dt.datetime.now(TZ_VE):%F}", "--", *rels)
+        git("push")
     sha = git("rev-parse", "HEAD")
     repo = os.getenv("GITHUB_REPOSITORY") or re.sub(
         r"^.*github\.com[:/]|\.git$", "", git("remote", "get-url", "origin")
     )
-    url = f"https://raw.githubusercontent.com/{repo}/{sha}/{rel}"
-    # Espera a que GitHub sirva el archivo antes de pasárselo a Threads.
-    for _ in range(12):
-        if requests.head(url, timeout=15).status_code == 200:
-            return url
-        time.sleep(5)
-    raise RuntimeError(f"la imagen no está accesible en {url} (¿el repo es público?)")
+    urls = [f"https://raw.githubusercontent.com/{repo}/{sha}/{rel}" for rel in rels]
+    # Espera a que GitHub sirva los archivos antes de pasárselos a Threads.
+    for url in urls:
+        for _ in range(12):
+            if requests.head(url, timeout=15).status_code == 200:
+                break
+            time.sleep(5)
+        else:
+            raise RuntimeError(f"la imagen no está accesible en {url} (¿el repo es público?)")
+    return urls
 
 
 def fetch_real_data() -> str | None:
@@ -760,7 +827,7 @@ def post_problems(text: str) -> list[str]:
     return problems
 
 
-def generate_post(topic: dict, history: list, real_data: str | None, view_id: str | None) -> str:
+def generate_post(topic: dict, history: list, real_data: str | None, shots: list[dict]) -> str:
     # Solo las primeras líneas: si la IA ve los posts completos tiende a copiar su estructura.
     ganchos = "\n".join(
         f"- {h['texto'].strip().splitlines()[0][:90]}" for h in history[-12:] if h.get("texto")
@@ -773,8 +840,9 @@ def generate_post(topic: dict, history: list, real_data: str | None, view_id: st
         f"{topic['angulo']}\n\n"
         f"Cálculos ya hechos (cifras exactas, úsalas tal cual): {calcs or 'no disponibles'}\n\n"
         f"Datos reales del día:\n{real_data or 'no disponibles'}\n\n"
-        + (f"El post lleva una imagen de {VISTAS[view_id]['desc']} (no la describas).\n\n"
-           if view_id else "El post va sin imagen.\n\n") +
+        + (f"El post lleva {'una imagen' if len(shots) == 1 else 'un carrusel de imágenes'}: "
+           f"{'; '.join(map(shot_desc, shots))} (no las describas).\n\n"
+           if shots else "El post va sin imagen.\n\n") +
         f"Primeras líneas de los últimos posts (escribe algo que no se parezca a ninguna):\n{ganchos}"
     )
     mejores = best_posts(history)
@@ -818,12 +886,33 @@ def threads_request(method: str, path: str, token: str, **params) -> dict:
     raise RuntimeError("Threads API no respondió.")
 
 
+def wait_container(creation_id: str, token: str) -> None:
+    """Meta recomienda esperar a que el contenedor esté listo antes de usarlo."""
+    for _ in range(10):
+        time.sleep(6)
+        status = threads_request("GET", f"/{creation_id}", token, fields="status,error_message")
+        if status.get("status") == "FINISHED":
+            return
+        if status.get("status") in ("ERROR", "EXPIRED"):
+            raise RuntimeError(f"Contenedor con error: {status}")
+
+
 def publish_to_threads(
-    text: str, token: str, reply_to_id: str | None = None, image_url: str | None = None
+    text: str, token: str, reply_to_id: str | None = None, image_urls: list[str] | None = None
 ) -> str:
+    """Publica texto, texto con una imagen o, con varias imágenes, un carrusel."""
     params = {"media_type": "TEXT", "text": text}
-    if image_url:
-        params.update(media_type="IMAGE", image_url=image_url)
+    if image_urls and len(image_urls) == 1:
+        params.update(media_type="IMAGE", image_url=image_urls[0])
+    elif image_urls:
+        # Carrusel: primero un contenedor por imagen y luego el del carrusel con sus hijos.
+        children = []
+        for url in image_urls:
+            child = threads_request("POST", "/me/threads", token, media_type="IMAGE",
+                                    image_url=url, is_carousel_item="true")["id"]
+            wait_container(child, token)
+            children.append(child)
+        params.update(media_type="CAROUSEL", children=",".join(children))
     if reply_to_id:
         params["reply_to_id"] = reply_to_id
     else:
@@ -838,16 +927,7 @@ def publish_to_threads(
         container = threads_request("POST", "/me/threads", token, **params)
     creation_id = container["id"]
     log(f"Contenedor creado: {creation_id}")
-
-    # Meta recomienda esperar a que el contenedor esté listo antes de publicar.
-    for _ in range(10):
-        time.sleep(6)
-        status = threads_request("GET", f"/{creation_id}", token, fields="status,error_message")
-        if status.get("status") == "FINISHED":
-            break
-        if status.get("status") in ("ERROR", "EXPIRED"):
-            raise RuntimeError(f"Contenedor con error: {status}")
-
+    wait_container(creation_id, token)
     result = threads_request("POST", "/me/threads_publish", token, creation_id=creation_id)
     return result["id"]
 
@@ -898,32 +978,38 @@ def main() -> int:
     log(f"Tema del día: {topic['id']}" + (f" (idea: {idea['idea']})" if idea else ""))
     if idea:
         topic = {**topic, "angulo": f"{topic['angulo']}\nIdea de hoy: {idea['idea']}."}
-        if "vista" in idea:  # None = sin imagen
-            topic["vistas"] = [idea["vista"]]
+        if "vistas" in idea:  # [] = sin imagen
+            topic["vistas"] = idea["vistas"]
 
-    view_id = pick_view(topic, history)
-    log(f"Vista para la imagen: {view_id}")
+    shots, estilo = plan_images(topic, history)
+    log(f"Imágenes ({estilo}): {shots or 'ninguna'}")
     # Según el tema, los datos son las tasas, las mejoras de la app o los precios del mercado.
     fetchers = {"noticias": fetch_news, "tasas": fetch_real_data, "ninguno": lambda: None}
     data = fetchers[topic["datos"]]()
-    text = generate_post(topic, history, data, view_id)
+    text = generate_post(topic, history, data, shots)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
     reply_text = topic["respuesta"].format(link=topic["link"])
     log(f"Respuesta con el enlace:\n{reply_text}\n")
-    image = capture_view(view_id)
+    images = capture_images(shots, estilo)
 
     if DRY_RUN:
         log("DRY_RUN activo: no se publica ni se guarda historial.")
         return 0
 
     post_id = None
-    if image:
+    if images:
         try:
-            image_url = publish_image(image)
-            log(f"Imagen publicada: {image_url}")
-            post_id = publish_to_threads(text, token, image_url=image_url)
+            image_urls = publish_images(images)
+            log(f"Imágenes publicadas: {image_urls}")
+            try:
+                post_id = publish_to_threads(text, token, image_urls=image_urls)
+            except Exception as e:  # noqa: BLE001
+                if len(image_urls) == 1:
+                    raise
+                log(f"Aviso: no se pudo publicar el carrusel ({e}); se publica con una imagen.")
+                post_id = publish_to_threads(text, token, image_urls=image_urls[:1])
         except Exception as e:  # noqa: BLE001
-            log(f"Aviso: no se pudo publicar con imagen ({e}); se publica solo el texto.")
+            log(f"Aviso: no se pudo publicar con imágenes ({e}); se publica solo el texto.")
     if not post_id:
         post_id = publish_to_threads(text, token)
     log(f"Publicado en Threads. ID: {post_id}")
@@ -941,7 +1027,9 @@ def main() -> int:
             "tema": topic["id"],
             "post_id": post_id,
             "reply_id": reply_id,
-            "vista": view_id,
+            "vistas": [s["vista"] for s in shots],
+            "rangos": [s.get("rango") for s in shots],
+            "estilo": estilo,
             "idea": idea["idea"] if idea else None,
             "texto": text,
         }

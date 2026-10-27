@@ -107,12 +107,14 @@ python bot/post.py
   aparecen (BCV, USDT). Si defines `COTIZADOS_API_URL`, usa ese JSON en vez de la página (más
   rápido y estable). Si no logra leer cifras, publica igual pero sin números: nunca los inventa.
   El log de cada ejecución muestra el texto leído, para que verifiques que es correcto.
-- **Imagen del post:** cada tema tiene varias vistas posibles de la web (tarjetas de brecha,
-  dólar BCV, euro BCV y Binance de `/cotizaciones`, la calculadora o `/noticias`; ver `VISTAS` y
-  `"vistas"` en `TEMAS`). El bot elige una sin repetir la del post anterior, la captura en
-  `public/tasas.png`, la sube al repo y le pasa a Threads su URL de `raw.githubusercontent.com`.
-  Por eso **el repo debe ser público** (las claves siguen en los secretos). Si la imagen falla,
-  el post se publica solo con texto.
+- **Imágenes del post:** cada tema tiene varias vistas posibles de la web (tarjetas y resumen de
+  `/cotizaciones`, gráficas anuales del dólar, euro, Binance y la brecha con distintos rangos,
+  la calculadora, `/noticias` y `/mercado`; ver `VISTAS` y `"vistas"` en `TEMAS`). El bot prioriza
+  las que no salieron en los últimos 6 posts y alterna modo claro y oscuro. Algunos temas
+  publican un carrusel (`"imagenes"` en `TEMAS`). Las capturas van a `public/tasas.png`,
+  `tasas2.png`…, se suben al repo y Threads las descarga de `raw.githubusercontent.com`. Por eso
+  **el repo debe ser público** (las claves siguen en los secretos). Si el carrusel falla se
+  publica con una imagen, y si las imágenes fallan, solo con texto.
 - **Cálculos:** las cifras (variación del dólar y el euro BCV, brecha, montos de ejemplo a tasa
   BCV, euro y P2P, y la brecha del último año de la gráfica anual) las calcula Python; la IA solo
   las copia.
