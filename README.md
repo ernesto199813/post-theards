@@ -44,6 +44,10 @@ entre los dos comentarios).
 
 ## Calendario
 
+- **Horarios:** 8:47 a. m., 1:17 p. m. y 7:47 p. m. (Venezuela), en `HORARIOS` de
+  `bot/schedule.py`. GitHub retrasa o se salta a veces los cron, así que el workflow corre cada
+  30 minutos y `bot/schedule.py` publica solo si ya pasó un horario y aún no hay post desde
+  entonces: un cron perdido se recupera en la siguiente ejecución.
 - **Martes a viernes:** el primer post del día es la variación de la tasa BCV respecto a ayer.
 - **Resto de posts:** sorteo ponderado entre los formatos según su rendimiento (vistas e
   interacciones de los últimos 14 días), sin repetir los formatos de los últimos 2 posts.
@@ -138,11 +142,12 @@ python bot/post.py
 - **Historial:** `data/history.json` guarda los últimos 150 posts con sus estadísticas; se
   commitea tras cada publicación.
 - **Personalizar:** el contexto del mercado se edita arriba en este README; los formatos en la
-  lista `TEMAS` y las reglas de redacción en `SYSTEM_PROMPT` de `bot/post.py`; cambia la hora en
-  las líneas `cron` del workflow (están en UTC; agrega o quita líneas para publicar más o menos veces).
+  lista `TEMAS` y las reglas de redacción en `SYSTEM_PROMPT` de `bot/post.py`; las horas de publicación
+  en `HORARIOS` de `bot/schedule.py` (hora de Venezuela; agrega o quita horarios para publicar más
+  o menos veces).
 
 ## Límites a tener en cuenta
 
 - Threads permite hasta 250 publicaciones por día y 500 caracteres por post; el bot valida el largo.
-- GitHub puede retrasar los cron unos minutos y desactiva los workflows programados tras 60 días
+- GitHub puede retrasar los cron horas (o saltarse alguno) y desactiva los workflows programados tras 60 días
   sin actividad en el repo; los commits diarios del historial lo mantienen activo.

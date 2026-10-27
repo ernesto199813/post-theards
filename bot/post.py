@@ -966,12 +966,11 @@ def publish_to_threads(
     return result["id"]
 
 
-def maybe_refresh_token(token: str) -> None:
+def maybe_refresh_token(token: str, first_post_today: bool) -> None:
     """Renueva el token de larga duración (válido 60 días) una vez por semana, en el primer
     post del lunes. El nuevo token se deja en $RUNNER_TEMP/new_token para que el workflow lo
     guarde como secreto."""
-    now = dt.datetime.now(TZ_VE)
-    first_monday_post = now.weekday() == 0 and now.hour < 12
+    first_monday_post = dt.datetime.now(TZ_VE).weekday() == 0 and first_post_today
     if not (first_monday_post or FORCE_REFRESH):
         return
     try:
@@ -1056,6 +1055,8 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001
         log(f"Aviso: el post salió, pero no se pudo publicar la respuesta con el enlace ({e}).")
 
+    hoy = dt.datetime.now(TZ_VE).strftime("%Y-%m-%d")
+    first_post_today = not any(h.get("fecha", "").startswith(hoy) for h in history)
     history.append(
         {
             "fecha": dt.datetime.now(TZ_VE).isoformat(timespec="minutes"),
@@ -1070,7 +1071,7 @@ def main() -> int:
         }
     )
     save_history(history)
-    maybe_refresh_token(token)
+    maybe_refresh_token(token, first_post_today)
     return 0
 
 

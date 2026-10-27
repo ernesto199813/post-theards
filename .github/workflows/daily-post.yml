@@ -2,10 +2,10 @@ name: Post diario en Threads
 
 on:
   schedule:
-    # Horas en UTC; Venezuela es UTC-4. Para publicar más o menos veces, agrega o quita líneas.
-    - cron: "47 12 * * *"   # 8:47 a. m.
-    - cron: "17 17 * * *"   # 1:17 p. m.
-    - cron: "47 23 * * *"   # 7:47 p. m.
+    # Cada 30 minutos: GitHub retrasa horas o se salta a veces los cron, así que no se confía en
+    # una ejecución por horario. bot/schedule.py decide si toca publicar (horarios en HORARIOS:
+    # 8:47 a. m., 1:17 p. m. y 7:47 p. m. de Venezuela) y, si no, el job termina en segundos.
+    - cron: "17,47 * * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -31,17 +31,30 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Las ejecuciones manuales publican siempre; las programadas solo si toca un horario.
+      - name: ¿Toca publicar?
+        id: due
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "due=true" >> "$GITHUB_OUTPUT"
+          else
+            python3 bot/schedule.py
+          fi
+
       - uses: actions/setup-python@v6
+        if: steps.due.outputs.due == 'true'
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Instalar dependencias y Chromium
+        if: steps.due.outputs.due == 'true'
         run: |
           pip install -r requirements.txt
           python -m playwright install --with-deps chromium
 
       - name: Generar y publicar
+        if: steps.due.outputs.due == 'true'
         env:
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -52,6 +65,7 @@ jobs:
         run: python bot/post.py
 
       - name: Guardar token renovado
+        if: steps.due.outputs.due == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
@@ -68,6 +82,7 @@ jobs:
           echo "Secreto THREADS_ACCESS_TOKEN actualizado."
 
       - name: Guardar historial
+        if: steps.due.outputs.due == 'true'
         run: |
           if [ -n "$(git status --porcelain data/)" ]; then
             git config user.name "cotizados-bot"
