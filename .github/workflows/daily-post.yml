@@ -27,7 +27,7 @@ concurrency:
 jobs:
   post:
     runs-on: ubuntu-24.04   # fijo: ubuntu-latest pasa a Ubuntu 26 y podría romper Chromium
-    timeout-minutes: 10
+    timeout-minutes: 15   # Threads tarda unos minutos en procesar los videos
     steps:
       - uses: actions/checkout@v5
 

@@ -119,7 +119,13 @@ python bot/post.py
   `/cotizaciones`, gráficas anuales del dólar, euro, Binance y la brecha con distintos rangos,
   la calculadora, `/noticias` y `/mercado`; ver `VISTAS` y `"vistas"` en `TEMAS`). El bot prioriza
   las que no salieron en los últimos 6 posts y alterna modo claro y oscuro. Algunos temas
-  publican un carrusel (`"imagenes"` en `TEMAS`). Las pantallas que necesitan iniciar sesión
+  publican un carrusel (`"imagenes"` en `TEMAS`).
+- **Videos:** los temas con `"videos"` en `TEMAS` pueden salir con un video corto (10-15 s) que
+  graba la app en tamaño de teléfono: el recorrido por Cotizaciones, una gráfica anual pasando de
+  1 mes a 1 año o las Noticias (guiones en `GUIONES`). Se convierte a MP4 con ffmpeg
+  (`imageio-ffmpeg`) y se sube como `public/video.mp4`. Al principio la mitad de esos posts sale
+  en video; cuando hay al menos 3 posts medidos en video y 3 con imagen, la probabilidad sigue
+  al puntaje de cada uno (entre 25 % y 75 %). Si el video falla, el post sale con imágenes. Las pantallas que necesitan iniciar sesión
   (Inicio y Nuevo Movimiento) son capturas fijas en `public/app/`; para actualizarlas, reemplaza
   esos archivos. Las capturas van a `public/tasas.png`,
   `tasas2.png`…, se suben al repo y Threads las descarga de `raw.githubusercontent.com`. Por eso
@@ -133,7 +139,7 @@ python bot/post.py
   sin precios, porque aún está en construcción.
 - **Estadísticas:** antes de cada post el bot lee las vistas, likes y respuestas de los posts de
   los últimos 14 días y las guarda en el historial. `python bot/post.py --stats` muestra el
-  rendimiento por formato sin publicar nada.
+  rendimiento por formato y por medio (video, imagen o texto) sin publicar nada.
 - **Enlace en la respuesta:** el post principal sale sin enlace (Threads suele dar menos
   alcance a los posts con enlaces externos) y justo después el bot responde a su propio post con
   el enlace de la sección. El texto de esa respuesta es `"respuesta"` en cada tema de `TEMAS`.

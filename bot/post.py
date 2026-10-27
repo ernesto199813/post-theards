@@ -14,6 +14,8 @@ Flujo:
      plantilla (saludos, "en la imagen…", "pruébalo aquí abajo"…) o es demasiado largo.
   4. Captura una vista de la web según el tema (tarjetas de /cotizaciones, calculadora o
      noticias; ver VISTAS) como imagen en public/tasas.png y la sube al repo (debe ser público) para que Threads la descargue. Si falla, el post va sin imagen.
+     En los temas que lo admiten, a veces graba en su lugar un video corto de la app
+     (ver GUIONES) en public/video.mp4; si el video falla, se publica con imágenes.
   5. Publica en Threads (crear contenedor -> esperar -> publicar) y responde al propio
      post con el enlace (los posts sin enlace externo suelen tener más alcance).
   6. Guarda el historial y, una vez por semana, renueva el token de Threads.
@@ -41,6 +43,7 @@ import random
 import re
 import subprocess
 import sys
+import tempfile
 import time
 
 import requests
@@ -65,6 +68,7 @@ def load_dotenv(path: pathlib.Path) -> None:
 load_dotenv(ROOT / ".env")
 HISTORY_FILE = ROOT / "data" / "history.json"
 IMAGE_FILE = ROOT / "public" / "tasas.png"
+VIDEO_FILE = ROOT / "public" / "video.mp4"
 SITE = "https://cotizados.vercel.app"
 GRAPH = "https://graph.threads.net/v1.0"
 THREADS_MAX_CHARS = 500
@@ -77,7 +81,7 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL") or "gemini-3.5-flash-lite"
 # Cada tema es un formato narrativo distinto (no solo un producto distinto): el post habla de la
 # vida del lector con dos monedas y la app aparece poco o nada; el enlace va en la respuesta.
 # "angulo" guía a la IA, "link" es la sección del enlace, "vistas" las imágenes posibles (ver
-# VISTAS), "respuesta" el texto de la respuesta con el enlace y "datos" qué se le pasa a la IA.
+# VISTAS), "videos" los videos posibles (ver GUIONES), "respuesta" el texto de la respuesta con el enlace y "datos" qué se le pasa a la IA.
 TEMAS = [
     {
         "id": "movimiento_dia",
@@ -93,6 +97,7 @@ TEMAS = [
         # Carrusel de 2: la tasa del día y su gráfica.
         "imagenes": 2,
         "vistas": ["cot_dolar", "cot_euro", "cot_resumen", "grafica_dolar", "grafica_euro"],
+        "videos": ["video_dolar", "video_euro", "video_cotizaciones"],
         "respuesta": "Todas las tasas de hoy en un solo sitio 👉 {link}",
         "datos": "tasas",
     },
@@ -106,6 +111,7 @@ TEMAS = [
         ),
         "link": f"{SITE}/calculator",
         "vistas": ["calculadora", "cot_brecha", "cot_binance", "cot_resumen"],
+        "videos": ["video_cotizaciones", "video_binance"],
         "respuesta": "Calcula tu monto exacto aquí 👉 {link}",
         "datos": "tasas",
     },
@@ -143,23 +149,25 @@ TEMAS = [
             {"idea": "la Tasa Libre de la calculadora: calcular con tu propia tasa, la que de verdad "
                      "te dieron, sin depender del BCV ni de Binance", "vistas": ["app_tasa_libre"]},
             {"idea": "la tarjeta de Brecha en Cotizaciones: cuánto se separan el BCV y el Binance "
-                     "P2P en porcentaje y en bolívares", "vistas": ["cot_brecha", "cot_resumen"]},
+                     "P2P en porcentaje y en bolívares", "vistas": ["cot_brecha", "cot_resumen"],
+             "videos": ["video_cotizaciones"]},
             {"idea": "la gráfica anual de la Brecha (botón 'Ver gráfica anual' en Cotizaciones): ves "
                      "lo volátil que ha estado la brecha en lo que va de año, con la actual, el "
                      "promedio, la máxima y la mínima, por 1 mes, 3 meses, 6 meses o 1 año",
-             "vistas": ["grafica_brecha", "app_brecha_anual"]},
+             "vistas": ["grafica_brecha", "app_brecha_anual"], "videos": ["video_brecha"]},
             {"idea": "la vista de Inicio cuando inicias sesión: ahí llevas tus ingresos y gastos "
                      "del mes y ves tu balance (gratis, solo necesitas crear tu cuenta)",
              "vistas": ["app_inicio_gestion", "app_nuevo_movimiento"], "imagenes": 2},
             {"idea": "las tarjetas del dólar y el euro BCV en Cotizaciones: la tasa de hoy, la de "
-                     "ayer y cuánto cambió", "vistas": ["cot_dolar", "cot_euro", "cot_resumen"]},
+                     "ayer y cuánto cambió", "vistas": ["cot_dolar", "cot_euro", "cot_resumen"],
+             "videos": ["video_dolar", "video_euro", "video_cotizaciones"]},
             {"idea": "el botón Compartir tasa en Cotizaciones, para mandarle la tasa del día a "
                      "quien te pregunte", "vistas": ["cot_resumen", "cot_brecha"]},
             {"idea": "la sección Mercado, que todavía estoy construyendo: una comparativa de "
                      "productos del supermercado para armar tu lista de compras (sin mencionar "
                      "precios)", "vistas": ["mercado", "mercado_lista"]},
             {"idea": "la sección Noticias: ahí anoto cada mejora que le hago a la app, en orden",
-             "vistas": ["noticias"]},
+             "vistas": ["noticias"], "videos": ["video_noticias"]},
             {"idea": "instalar Cotizados en la pantalla de inicio del teléfono desde el navegador, "
                      "sin tienda de apps y sin ocupar casi espacio", "vistas": ["calculadora", "cot_resumen"]},
             {"idea": "la sección Comentarios: cualquiera puede mandar una idea o reportar un error "
@@ -206,6 +214,7 @@ TEMAS = [
         "imagenes": 3,
         "vistas": ["noticias", "app_tasa_libre", "app_inicio_gestion", "cot_resumen", "grafica_dolar",
                    "grafica_brecha", "mercado"],
+        "videos": ["video_noticias"],
         "respuesta": "Aquí está todo lo nuevo 👉 {link}",
         "datos": "noticias",
     },
@@ -221,6 +230,7 @@ TEMAS = [
         ),
         "link": f"{SITE}/calculator",
         "vistas": ["calculadora", "cot_euro", "cot_resumen", "cot_binance"],
+        "videos": ["video_cotizaciones"],
         "respuesta": "Para la próxima, la calculadora 👉 {link}",
         "datos": "tasas",
     },
@@ -237,6 +247,7 @@ TEMAS = [
         "link": f"{SITE}/cotizaciones",
         "imagenes": 2,
         "vistas": ["cot_brecha", "grafica_brecha", "grafica_binance"],
+        "videos": ["video_brecha", "video_binance"],
         "respuesta": "La brecha actualizada aquí 👉 {link}",
         "datos": "tasas",
     },
@@ -250,6 +261,7 @@ TEMAS = [
         ),
         "link": SITE,
         "vistas": ["calculadora", "cot_resumen", "grafica_dolar", "grafica_euro", "cot_euro"],
+        "videos": ["video_dolar", "video_euro", "video_cotizaciones"],
         "respuesta": "Aquí la tienes 👉 {link}",
         "datos": "tasas",
     },
@@ -294,6 +306,34 @@ VISTAS = {
                        "desc": "la calculadora con la Tasa Libre: un dólar libre a 2.000 Bs"},
     "app_brecha_anual": {"archivo": "public/app/brecha_anual.jpg",
                          "desc": "la gráfica de la brecha BCV vs Binance del último año, en modo claro"},
+}
+
+# Videos cortos (10-15 s): grabaciones de pantalla de la app en tamaño de teléfono. Cada paso es
+# (acción, valor): "pausa" ms; "bajar"/"subir" píxeles con desplazamiento suave; "grafica" abre la
+# "Ver gráfica anual" de esa tarjeta (como en VISTAS); "rango" pulsa ese periodo de la gráfica.
+_RECORRIDO_RANGOS = [("pausa", 1500), ("rango", "1M"), ("pausa", 1800), ("rango", "3M"), ("pausa", 1800),
+                     ("rango", "6M"), ("pausa", 1800), ("rango", "1A"), ("pausa", 2500)]
+GUIONES = {
+    "video_cotizaciones": {
+        "path": "/cotizaciones",
+        "pasos": [("pausa", 2000), ("bajar", 300), ("pausa", 1800), ("bajar", 280), ("pausa", 1800),
+                  ("bajar", 280), ("pausa", 1800), ("subir", 860), ("pausa", 1500)],
+        "desc": "un recorrido por Cotizaciones: la brecha, el dólar BCV, el euro BCV y Binance P2P",
+    },
+    "video_brecha": {"path": "/cotizaciones", "pasos": [("pausa", 1200), ("grafica", 0), *_RECORRIDO_RANGOS],
+                     "desc": "la gráfica de la brecha BCV vs Binance pasando de 1 mes a 3 meses, 6 meses y 1 año"},
+    "video_dolar": {"path": "/cotizaciones", "pasos": [("pausa", 1200), ("grafica", 1), *_RECORRIDO_RANGOS],
+                    "desc": "la gráfica del dólar BCV pasando de 1 mes a 3 meses, 6 meses y 1 año"},
+    "video_euro": {"path": "/cotizaciones", "pasos": [("pausa", 1200), ("grafica", 2), *_RECORRIDO_RANGOS],
+                   "desc": "la gráfica del euro BCV pasando de 1 mes a 3 meses, 6 meses y 1 año"},
+    "video_binance": {"path": "/cotizaciones", "pasos": [("pausa", 1200), ("grafica", 3), *_RECORRIDO_RANGOS],
+                      "desc": "la gráfica del USDT en Binance P2P pasando de 1 mes a 3 meses, 6 meses y 1 año"},
+    "video_noticias": {
+        "path": "/noticias",
+        "pasos": [("pausa", 2000), ("bajar", 350), ("pausa", 2200), ("bajar", 350), ("pausa", 2200),
+                  ("bajar", 350), ("pausa", 2000)],
+        "desc": "un recorrido por la sección Noticias con las últimas mejoras de la app",
+    },
 }
 
 # Tema de Threads (topic tag) con el que se etiqueta cada post; reemplaza a los hashtags del texto.
@@ -444,7 +484,30 @@ def stats_report(history: list) -> str:
                          f"{replies:4.1f} respuestas | puntaje {sum(map(engagement, posts)) / len(posts):6.0f}")
         else:
             lines.append(f"  {t['id']:<15}  sin datos")
+    for m in ("video", "imagen", "texto"):
+        posts = [h for h in measured(history) if medio(h) == m][-20:]
+        if posts:
+            lines.append(f"  [{m}]{'':<{12 - len(m)}} {len(posts):>2} posts | puntaje (últimos 20) "
+                         f"{sum(map(engagement, posts)) / len(posts):6.0f}")
+    lines.append(f"  Probabilidad de video en los temas que lo admiten: {video_share(history):.0%}")
     return "\n".join(lines)
+
+
+def medio(h: dict) -> str:
+    return "video" if h.get("video") else "imagen" if used_views(h) else "texto"
+
+
+def video_share(history: list) -> float:
+    """Probabilidad de publicar en video cuando el tema lo admite. Empieza en 50 % y, con al
+    menos 3 posts medidos en video y 3 con imagen (los últimos 20 de cada uno), sigue al puntaje:
+    video / (video + imagen), entre 25 % y 75 % para seguir probando ambos."""
+    medias = {}
+    for m in ("video", "imagen"):
+        posts = [h for h in measured(history) if medio(h) == m][-20:]
+        if len(posts) < 3:
+            return 0.5
+        medias[m] = sum(map(engagement, posts)) / len(posts)
+    return min(0.75, max(0.25, medias["video"] / ((medias["video"] + medias["imagen"]) or 1)))
 
 
 def pick_topic(history: list) -> dict:
@@ -611,18 +674,33 @@ def plan_images(topic: dict, history: list) -> tuple[list[dict], str]:
     return shots, estilo
 
 
+def plan_video(topic: dict, history: list) -> str | None:
+    """Elige el video del post (ver GUIONES) o None si va con imágenes: solo en temas con
+    "videos", con la probabilidad de video_share y priorizando los que no salieron en los últimos
+    6 posts."""
+    if not topic.get("videos") or random.random() >= video_share(history):
+        return None
+    recientes = {h.get("video") for h in history[-6:]}
+    return random.choice([g for g in topic["videos"] if g not in recientes] or topic["videos"])
+
+
 def shot_desc(shot: dict) -> str:
     return VISTAS[shot["vista"]]["desc"].format(rango=RANGOS.get(shot.get("rango"), ""))
+
+
+def load_page(page, path: str) -> None:
+    """Abre una página de la web y espera a que el JavaScript cargue las cifras."""
+    page.goto(f"{SITE}{path}", wait_until="networkidle", timeout=45000)
+    try:
+        page.wait_for_function(r"() => /\d+[.,]\d{2}/.test(document.body.innerText)", timeout=15000)
+    except Exception:  # noqa: BLE001
+        pass  # /noticias y /mercado no siempre tienen cifras
 
 
 def capture_shot(page, shot: dict) -> dict:
     """Prepara la página para una captura y devuelve el recorte (clip) a fotografiar."""
     view = VISTAS[shot["vista"]]
-    page.goto(f"{SITE}{view['path']}", wait_until="networkidle", timeout=45000)
-    try:
-        page.wait_for_function(r"() => /\d+[.,]\d{2}/.test(document.body.innerText)", timeout=15000)
-    except Exception:  # noqa: BLE001
-        pass  # /noticias y /mercado no siempre tienen cifras
+    load_page(page, view["path"])
     if "pais" in view:
         select_country(page, view["pais"])
     if "clic" in view:
@@ -714,6 +792,58 @@ def capture_images(shots: list[dict], estilo: str) -> list[pathlib.Path]:
     return paths
 
 
+def record_video(guion: str, estilo: str) -> pathlib.Path | None:
+    """Graba la app siguiendo el guion (ver GUIONES) y lo convierte en public/video.mp4: H.264
+    con pista de audio silenciosa, como lo pide Threads, sin la carga inicial de la página y
+    escalado al doble para que se vea nítido en el teléfono. None si falla."""
+    import imageio_ffmpeg
+    from playwright.sync_api import sync_playwright
+
+    g = GUIONES[guion]
+    size = {"width": 432, "height": 768}
+    tmp = pathlib.Path(tempfile.mkdtemp())
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            context = browser.new_context(locale="es-VE", viewport=size, color_scheme=estilo,
+                                          record_video_dir=str(tmp), record_video_size=size)
+            page = context.new_page()
+            inicio = time.monotonic()
+            load_page(page, g["path"])
+            page.wait_for_timeout(1500)  # deja terminar las animaciones de las cifras
+            corte = time.monotonic() - inicio
+            for accion, valor in g["pasos"]:
+                if accion == "pausa":
+                    page.wait_for_timeout(valor)
+                elif accion in ("bajar", "subir"):
+                    page.evaluate("(y) => window.scrollBy({top: y, behavior: 'smooth'})",
+                                  valor if accion == "bajar" else -valor)
+                    page.wait_for_timeout(900)
+                elif accion == "grafica":
+                    page.get_by_text("Ver gráfica anual").nth(valor).click()
+                    page.wait_for_selector("[role=dialog]", timeout=10000)
+                elif accion == "rango":
+                    page.locator("[role=dialog]").get_by_text(valor, exact=True).click()
+            context.close()  # termina de escribir el video
+            webm = page.video.path()
+            browser.close()
+        VIDEO_FILE.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            [imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error", "-ss", f"{corte:.2f}",
+             "-i", str(webm), "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo", "-shortest",
+             "-map", "0:v", "-map", "1:a", "-vf", "scale=864:1536:flags=lanczos", "-r", "30",
+             "-c:v", "libx264", "-crf", "23", "-pix_fmt", "yuv420p", "-g", "60",
+             "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart", str(VIDEO_FILE)],
+            check=True, capture_output=True,
+        )
+        log(f"Video generado ({guion} {estilo}): {VIDEO_FILE} "
+            f"({VIDEO_FILE.stat().st_size // 1024} KB)")
+        return VIDEO_FILE
+    except Exception as e:  # noqa: BLE001
+        log(f"Aviso: no se pudo generar el video {guion} ({e}).")
+        return None
+
+
 def git(*args: str) -> str:
     return subprocess.run(
         ["git", "-c", "user.name=cotizados-bot",
@@ -722,15 +852,15 @@ def git(*args: str) -> str:
     ).stdout.strip()
 
 
-def publish_images(paths: list[pathlib.Path]) -> list[str]:
-    """Sube las imágenes al repo (public/) y devuelve sus URLs públicas en
-    raw.githubusercontent.com: la API de Threads solo acepta imágenes desde una URL.
+def publish_files(paths: list[pathlib.Path]) -> list[str]:
+    """Sube las imágenes o el video al repo (public/) y devuelve sus URLs públicas en
+    raw.githubusercontent.com: la API de Threads solo acepta medios desde una URL.
     Requiere que el repo sea público. Las URLs llevan el commit para evitar la caché de GitHub."""
     rels = [p.relative_to(ROOT).as_posix() for p in paths]
     git("add", *rels)
-    # Si las imágenes son idénticas a las ya subidas no hay nada que commitear.
+    # Si los archivos son idénticos a los ya subidos no hay nada que commitear.
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
-        git("commit", "-m", f"chore: imagen de tasas {dt.datetime.now(TZ_VE):%F}", "--", *rels)
+        git("commit", "-m", f"chore: medios del post {dt.datetime.now(TZ_VE):%F}", "--", *rels)
         git("push")
     sha = git("rev-parse", "HEAD")
     repo = os.getenv("GITHUB_REPOSITORY") or re.sub(
@@ -744,7 +874,7 @@ def publish_images(paths: list[pathlib.Path]) -> list[str]:
                 break
             time.sleep(5)
         else:
-            raise RuntimeError(f"la imagen no está accesible en {url} (¿el repo es público?)")
+            raise RuntimeError(f"el archivo no está accesible en {url} (¿el repo es público?)")
     return urls
 
 
@@ -861,22 +991,29 @@ def post_problems(text: str) -> list[str]:
     return problems
 
 
-def generate_post(topic: dict, history: list, real_data: str | None, shots: list[dict]) -> str:
+def generate_post(
+    topic: dict, history: list, real_data: str | None, shots: list[dict], guion: str | None = None
+) -> str:
     # Solo las primeras líneas: si la IA ve los posts completos tiende a copiar su estructura.
     ganchos = "\n".join(
         f"- {h['texto'].strip().splitlines()[0][:90]}" for h in history[-12:] if h.get("texto")
     ) or "(ninguno todavía)"
     hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y, %I:%M %p")
     calcs = rate_calcs(real_data) if topic["datos"] == "tasas" else None
+    if guion:
+        medios = f"El post lleva un video corto de la app: {GUIONES[guion]['desc']} (no lo describas).\n\n"
+    elif shots:
+        medios = (f"El post lleva {'una imagen' if len(shots) == 1 else 'un carrusel de imágenes'}: "
+                  f"{'; '.join(map(shot_desc, shots))} (no las describas).\n\n")
+    else:
+        medios = "El post va sin imagen.\n\n"
 
     user_msg = (
         f"Fecha y hora en Venezuela: {hoy}\n\n"
         f"{topic['angulo']}\n\n"
         f"Cálculos ya hechos (cifras exactas, úsalas tal cual): {calcs or 'no disponibles'}\n\n"
         f"Datos reales del día:\n{real_data or 'no disponibles'}\n\n"
-        + (f"El post lleva {'una imagen' if len(shots) == 1 else 'un carrusel de imágenes'}: "
-           f"{'; '.join(map(shot_desc, shots))} (no las describas).\n\n"
-           if shots else "El post va sin imagen.\n\n") +
+        f"{medios}"
         f"Primeras líneas de los últimos posts (escribe algo que no se parezca a ninguna):\n{ganchos}"
     )
     mejores = best_posts(history)
@@ -920,9 +1057,9 @@ def threads_request(method: str, path: str, token: str, **params) -> dict:
     raise RuntimeError("Threads API no respondió.")
 
 
-def wait_container(creation_id: str, token: str) -> None:
+def wait_container(creation_id: str, token: str, intentos: int = 10) -> None:
     """Meta recomienda esperar a que el contenedor esté listo antes de usarlo."""
-    for _ in range(10):
+    for _ in range(intentos):
         time.sleep(6)
         status = threads_request("GET", f"/{creation_id}", token, fields="status,error_message")
         if status.get("status") == "FINISHED":
@@ -932,11 +1069,14 @@ def wait_container(creation_id: str, token: str) -> None:
 
 
 def publish_to_threads(
-    text: str, token: str, reply_to_id: str | None = None, image_urls: list[str] | None = None
+    text: str, token: str, reply_to_id: str | None = None, image_urls: list[str] | None = None,
+    video_url: str | None = None,
 ) -> str:
-    """Publica texto, texto con una imagen o, con varias imágenes, un carrusel."""
+    """Publica texto, texto con un video, con una imagen o, con varias imágenes, un carrusel."""
     params = {"media_type": "TEXT", "text": text}
-    if image_urls and len(image_urls) == 1:
+    if video_url:
+        params.update(media_type="VIDEO", video_url=video_url)
+    elif image_urls and len(image_urls) == 1:
         params.update(media_type="IMAGE", image_url=image_urls[0])
     elif image_urls:
         # Carrusel: primero un contenedor por imagen y luego el del carrusel con sus hijos.
@@ -961,7 +1101,8 @@ def publish_to_threads(
         container = threads_request("POST", "/me/threads", token, **params)
     creation_id = container["id"]
     log(f"Contenedor creado: {creation_id}")
-    wait_container(creation_id, token)
+    # Threads procesa el video antes de poder publicarlo: hasta 5 minutos.
+    wait_container(creation_id, token, intentos=50 if video_url else 10)
     result = threads_request("POST", "/me/threads_publish", token, creation_id=creation_id)
     return result["id"]
 
@@ -1014,26 +1155,41 @@ def main() -> int:
         if "vistas" in idea:  # [] = sin imagen
             topic["vistas"] = idea["vistas"]
             topic["imagenes"] = idea.get("imagenes", 1)
+            topic["videos"] = idea.get("videos", [])
 
+    # Las imágenes se planean siempre: son el respaldo si el video falla.
     shots, estilo = plan_images(topic, history)
-    log(f"Imágenes ({estilo}): {shots or 'ninguna'}")
+    guion = plan_video(topic, history)
+    log(f"Video: {guion}" if guion else f"Imágenes ({estilo}): {shots or 'ninguna'}")
     # Según el tema, los datos son las tasas, las mejoras de la app o los precios del mercado.
     fetchers = {"noticias": fetch_news, "tasas": fetch_real_data, "ninguno": lambda: None}
     data = fetchers[topic["datos"]]()
-    text = generate_post(topic, history, data, shots)
+    text = generate_post(topic, history, data, shots, guion)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
     reply_text = topic["respuesta"].format(link=topic["link"])
     log(f"Respuesta con el enlace:\n{reply_text}\n")
-    images = capture_images(shots, estilo)
+    video = record_video(guion, estilo) if guion else None
+    if not video:
+        guion = None
+    images = [] if video else capture_images(shots, estilo)
 
     if DRY_RUN:
         log("DRY_RUN activo: no se publica ni se guarda historial.")
         return 0
 
     post_id = None
-    if images:
+    if video:
         try:
-            image_urls = publish_images(images)
+            video_url = publish_files([video])[0]
+            log(f"Video publicado: {video_url}")
+            post_id = publish_to_threads(text, token, video_url=video_url)
+        except Exception as e:  # noqa: BLE001
+            log(f"Aviso: no se pudo publicar con video ({e}); se publica con imágenes.")
+            guion = None
+            images = capture_images(shots, estilo)
+    if images and not post_id:
+        try:
+            image_urls = publish_files(images)
             log(f"Imágenes publicadas: {image_urls}")
             try:
                 post_id = publish_to_threads(text, token, image_urls=image_urls)
@@ -1063,8 +1219,9 @@ def main() -> int:
             "tema": topic["id"],
             "post_id": post_id,
             "reply_id": reply_id,
-            "vistas": [s["vista"] for s in shots],
-            "rangos": [s.get("rango") for s in shots],
+            "video": guion,
+            "vistas": [] if guion else [s["vista"] for s in shots],
+            "rangos": [] if guion else [s.get("rango") for s in shots],
             "estilo": estilo,
             "idea": idea["idea"] if idea else None,
             "texto": text,
