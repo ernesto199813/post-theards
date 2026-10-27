@@ -3,7 +3,7 @@
 Publica **3 posts al día (8:47 a. m., 1:17 p. m. y 7:47 p. m., hora de Venezuela)** en Threads promocionando
 [cotizados.vercel.app](https://cotizados.vercel.app). El texto lo redacta Gemini en primera persona,
 como el creador de la app, rotando formatos narrativos (noticia rápida, ¿cuánto es?, mercado en
-desarrollo, cómo funciona, detrás de cámaras, situación real, brecha, truco). Los formatos que
+desarrollo, cómo funciona, tus cuentas, detrás de cámaras, situación real, brecha, truco). Los formatos que
 mejor funcionan según las estadísticas de Threads salen más seguido. De martes a viernes, el
 primer post del día siempre es la variación de la tasa. Corre gratis en GitHub Actions.
 
@@ -30,7 +30,11 @@ entre los dos comentarios).
   conviene. Por eso conviene saber las tasas antes de pagar, cobrar o cambiar.
 - Cotizados existe para eso: ver todas las tasas juntas (dólar BCV, euro BCV, Binance P2P), la
   brecha entre ellas y cómo ha variado en el año, y calcular con la tasa que de verdad te estén
-  aplicando (Tasa Libre). Con una cuenta gratis, la vista de Inicio permite llevar los gastos del mes.
+  aplicando (Tasa Libre).
+- Con una cuenta gratis, Cotizados también sirve para **llevar tus cuentas**: en Inicio ves el
+  balance del mes con ingresos y gastos, y anotas cada movimiento en USDT, bolívares o efectivo
+  (la app muestra su equivalente en bolívares), con de dónde vino (sueldo, pago de cliente,
+  venta, transferencia). Útil para quien cobra en varias monedas y no sabe en qué se le va la plata.
 - Tono: cercano e informado, como alguien que entiende cómo se mueve el mercado y lo explica
   claro. Respetuoso con la situación de la gente: se habla de plata que cuesta ganar. Humor solo
   si sale natural, nunca burlón.
@@ -111,7 +115,9 @@ python bot/post.py
   `/cotizaciones`, gráficas anuales del dólar, euro, Binance y la brecha con distintos rangos,
   la calculadora, `/noticias` y `/mercado`; ver `VISTAS` y `"vistas"` en `TEMAS`). El bot prioriza
   las que no salieron en los últimos 6 posts y alterna modo claro y oscuro. Algunos temas
-  publican un carrusel (`"imagenes"` en `TEMAS`). Las capturas van a `public/tasas.png`,
+  publican un carrusel (`"imagenes"` en `TEMAS`). Las pantallas que necesitan iniciar sesión
+  (Inicio y Nuevo Movimiento) son capturas fijas en `public/app/`; para actualizarlas, reemplaza
+  esos archivos. Las capturas van a `public/tasas.png`,
   `tasas2.png`…, se suben al repo y Threads las descarga de `raw.githubusercontent.com`. Por eso
   **el repo debe ser público** (las claves siguen en los secretos). Si el carrusel falla se
   publica con una imagen, y si las imágenes fallan, solo con texto.

@@ -141,16 +141,16 @@ TEMAS = [
             {"idea": "la Calculadora: escribes un monto y lo ves al instante en bolívares, dólares "
                      "BCV, USDT, euros y pesos colombianos; puedes añadir más tasas", "vistas": ["calculadora"]},
             {"idea": "la Tasa Libre de la calculadora: calcular con tu propia tasa, la que de verdad "
-                     "te dieron, sin depender del BCV ni de Binance", "vistas": ["calculadora"]},
+                     "te dieron, sin depender del BCV ni de Binance", "vistas": ["app_tasa_libre"]},
             {"idea": "la tarjeta de Brecha en Cotizaciones: cuánto se separan el BCV y el Binance "
                      "P2P en porcentaje y en bolívares", "vistas": ["cot_brecha", "cot_resumen"]},
             {"idea": "la gráfica anual de la Brecha (botón 'Ver gráfica anual' en Cotizaciones): ves "
                      "lo volátil que ha estado la brecha en lo que va de año, con la actual, el "
                      "promedio, la máxima y la mínima, por 1 mes, 3 meses, 6 meses o 1 año",
-             "vistas": ["grafica_brecha"]},
-            {"idea": "la vista de Inicio cuando inicias sesión: ahí llevas tus gastos del mes y "
-                     "sabes en qué se te va la plata (gratis, solo necesitas crear tu cuenta)",
-             "vistas": []},
+             "vistas": ["grafica_brecha", "app_brecha_anual"]},
+            {"idea": "la vista de Inicio cuando inicias sesión: ahí llevas tus ingresos y gastos "
+                     "del mes y ves tu balance (gratis, solo necesitas crear tu cuenta)",
+             "vistas": ["app_inicio_gestion", "app_nuevo_movimiento"], "imagenes": 2},
             {"idea": "las tarjetas del dólar y el euro BCV en Cotizaciones: la tasa de hoy, la de "
                      "ayer y cuánto cambió", "vistas": ["cot_dolar", "cot_euro", "cot_resumen"]},
             {"idea": "el botón Compartir tasa en Cotizaciones, para mandarle la tasa del día a "
@@ -171,6 +171,26 @@ TEMAS = [
         "datos": "tasas",
     },
     {
+        "id": "gestion",
+        "angulo": (
+            "Formato TUS CUENTAS. Habla como el creador presentando la parte de gestión de "
+            "Cotizados, para que la gente sepa que existe. Empieza por el problema (cobras en "
+            "USDT, bolívares y efectivo, y a fin de mes no sabes en qué se te fue la plata). Luego "
+            "cómo lo resuelve, eligiendo 1 o 2 de estas cosas: con una cuenta gratis, en Inicio "
+            "ves el balance del mes con tus ingresos y gastos; anotas cada movimiento como ingreso "
+            "o gasto en USDT, bolívares o efectivo y la app te muestra su equivalente en "
+            "bolívares; puedes ponerle de dónde vino (sueldo, pago de cliente, venta, "
+            "transferencia); ves los movimientos del mes filtrados por ingresos o gastos. Cierra "
+            "con una pregunta corta (ej. si llevan sus gastos y cómo). No inventes otras funciones."
+        ),
+        "link": SITE,
+        "espacio": 4,
+        "imagenes": 2,
+        "vistas": ["app_inicio_gestion", "app_nuevo_movimiento"],
+        "respuesta": "Crea tu cuenta gratis y empieza a llevar tus cuentas 👉 {link}",
+        "datos": "ninguno",
+    },
+    {
         "id": "novedades",
         "angulo": (
             "Formato DETRÁS DE CÁMARAS. Habla como el creador de la app contando en qué estuvo "
@@ -184,7 +204,8 @@ TEMAS = [
         "espacio": 4,
         # Carrusel de 3, como el post manual que más vistas tuvo.
         "imagenes": 3,
-        "vistas": ["noticias", "calculadora", "cot_resumen", "grafica_dolar", "grafica_brecha", "mercado"],
+        "vistas": ["noticias", "app_tasa_libre", "app_inicio_gestion", "cot_resumen", "grafica_dolar",
+                   "grafica_brecha", "mercado"],
         "respuesta": "Aquí está todo lo nuevo 👉 {link}",
         "datos": "noticias",
     },
@@ -243,6 +264,7 @@ TEMAS = [
 #              posibles de la gráfica (se elige uno al azar).
 #   "clic":    texto que se pulsa antes de capturar.
 #   "pais":    la página elige el país por ubicación; se fuerza Venezuela en el selector.
+#   "archivo": captura fija guardada en el repo, para pantallas que necesitan iniciar sesión.
 RANGOS = {"1M": "el último mes", "3M": "los últimos 3 meses", "6M": "los últimos 6 meses", "1A": "el último año"}
 VISTAS = {
     "cot_brecha": {"path": "/cotizaciones", "tarjeta": 0, "desc": "la brecha cambiaria entre el BCV y Binance P2P"},
@@ -264,6 +286,14 @@ VISTAS = {
     "mercado": {"path": "/mercado", "pais": "VE", "alto": 440, "desc": "la sección Mercado (en construcción)"},
     "mercado_lista": {"path": "/mercado", "pais": "VE", "clic": "Armar mi lista", "alto": 600,
                       "desc": "la pestaña Armar mi lista de la sección Mercado (en construcción)"},
+    "app_inicio_gestion": {"archivo": "public/app/inicio_gestion.jpg",
+                           "desc": "la vista de Inicio con el balance del mes, los ingresos, los gastos y los movimientos"},
+    "app_nuevo_movimiento": {"archivo": "public/app/nuevo_movimiento.jpg",
+                             "desc": "la pantalla Nuevo Movimiento para anotar un ingreso o un gasto en USDT, bolívares o efectivo"},
+    "app_tasa_libre": {"archivo": "public/app/tasa_libre.jpg",
+                       "desc": "la calculadora con la Tasa Libre: un dólar libre a 2.000 Bs"},
+    "app_brecha_anual": {"archivo": "public/app/brecha_anual.jpg",
+                         "desc": "la gráfica de la brecha BCV vs Binance del último año, en modo claro"},
 }
 
 # Tema de Threads (topic tag) con el que se etiqueta cada post; reemplaza a los hashtags del texto.
@@ -663,6 +693,10 @@ def capture_images(shots: list[dict], estilo: str) -> list[pathlib.Path]:
         browser = p.chromium.launch()
         for n, shot in enumerate(shots, start=1):
             out = IMAGE_FILE if n == 1 else IMAGE_FILE.with_name(f"tasas{n}.png")
+            if "archivo" in VISTAS[shot["vista"]]:
+                paths.append(ROOT / VISTAS[shot["vista"]]["archivo"])
+                log(f"Imagen fija: {paths[-1]}")
+                continue
             try:
                 # Ventana alta para que la barra de navegación fija no tape las tarjetas de abajo.
                 page = browser.new_page(
@@ -980,6 +1014,7 @@ def main() -> int:
         topic = {**topic, "angulo": f"{topic['angulo']}\nIdea de hoy: {idea['idea']}."}
         if "vistas" in idea:  # [] = sin imagen
             topic["vistas"] = idea["vistas"]
+            topic["imagenes"] = idea.get("imagenes", 1)
 
     shots, estilo = plan_images(topic, history)
     log(f"Imágenes ({estilo}): {shots or 'ninguna'}")
