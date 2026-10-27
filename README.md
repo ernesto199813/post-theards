@@ -1,21 +1,56 @@
 # Bot diario de Threads — Cotizados
 
 Publica **3 posts al día (8:47 a. m., 1:17 p. m. y 7:47 p. m., hora de Venezuela)** en Threads promocionando
-[cotizados.vercel.app](https://cotizados.vercel.app). El texto lo redacta Gemini, rotando 8 temas
-(tasa BCV, calculadora, BCV vs USDT, noticias, comunidad, app móvil, tips, comerciantes) y sin
-repetir los últimos posts. Corre gratis en GitHub Actions.
+[cotizados.vercel.app](https://cotizados.vercel.app). El texto lo redacta Gemini en primera persona,
+como el creador de la app, rotando formatos narrativos (noticia rápida, ¿cuánto es?, mercado en
+desarrollo, cómo funciona, detrás de cámaras, situación real, brecha, truco). Los formatos que
+mejor funcionan según las estadísticas de Threads salen más seguido. De martes a viernes, el
+primer post del día siempre es la variación de la tasa. Corre gratis en GitHub Actions.
 
 ```
 GitHub Actions (cron) ─▶ bot/post.py ─▶ IA: Gemini (redacta) ─▶ Threads API (publica)
-                                      └▶ data/history.json (evita repetir)
+                                      └▶ data/history.json (historial y estadísticas)
 ```
+
+## Contexto del mercado venezolano
+
+El bot lee esta sección y se la pasa a la IA en cada post, para que redacte entendiendo cómo se
+usan las tasas en la calle. Edítala aquí para cambiar lo que la IA tiene presente (solo el texto
+entre los dos comentarios).
+
+<!-- contexto:inicio -->
+- Los sueldos y pagos de los empleados del día a día se calculan en dólares a **tasa BCV** (el
+  dólar oficial). Es la referencia de lo que la gente cobra.
+- Muchos negocios ponen sus precios a **tasa euro BCV**, que es más alta que la del dólar BCV. Así,
+  el mismo producto marcado en "dólares" sale más caro en bolívares. Quien cobra a dólar BCV y
+  paga a tasa euro pierde en esa diferencia.
+- En la práctica, a veces la que manda en el mercado es la **tasa Binance P2P (USDT)** o la
+  **tasa euro**, no la del dólar BCV.
+- El **dólar en efectivo** no tiene una tasa fija: cada comercio o persona lo pone como le
+  conviene. Por eso conviene saber las tasas antes de pagar, cobrar o cambiar.
+- Cotizados existe para eso: ver todas las tasas juntas (dólar BCV, euro BCV, Binance P2P), la
+  brecha entre ellas y cómo ha variado en el año, y calcular con la tasa que de verdad te estén
+  aplicando (Tasa Libre). Con una cuenta gratis, la vista de Inicio permite llevar los gastos del mes.
+- Tono: cercano e informado, como alguien que entiende cómo se mueve el mercado y lo explica
+  claro. Respetuoso con la situación de la gente: se habla de plata que cuesta ganar. Humor solo
+  si sale natural, nunca burlón.
+- Evitar clichés gastados: el vuelto en caramelos, el tío del grupo de WhatsApp, "hacer
+  malabares", "la quincena se esfuma".
+<!-- contexto:fin -->
+
+## Calendario
+
+- **Martes a viernes:** el primer post del día es la variación de la tasa BCV respecto a ayer.
+- **Resto de posts:** sorteo ponderado entre los formatos según su rendimiento (vistas e
+  interacciones de los últimos 14 días), sin repetir los formatos de los últimos 2 posts.
+  "Detrás de cámaras" y "Mercado" salen como mucho cada 4 posts.
 
 ## 1. Crear la app de Threads y obtener el token
 
 1. Entra a <https://developers.facebook.com/apps> → **Crear app** → caso de uso
    **"Acceder a la API de Threads"**.
-2. En **Casos de uso → Personalizar**, activa los permisos `threads_basic` y
-   `threads_content_publish`.
+2. En **Casos de uso → Personalizar**, activa los permisos `threads_basic`,
+   `threads_content_publish` y `threads_manage_insights` (para leer las estadísticas de cada post).
 3. En **Roles de la app → Roles → Probadores de Threads**, agrega tu cuenta de Threads y acepta
    la invitación desde la app de Threads (*Configuración → Cuenta → Permisos de sitios web*).
 4. Abre el **Graph API Explorer**, cambia el selector de host a **threads.net**, elige tu app y
@@ -78,15 +113,24 @@ python bot/post.py
   `public/tasas.png`, la sube al repo y le pasa a Threads su URL de `raw.githubusercontent.com`.
   Por eso **el repo debe ser público** (las claves siguen en los secretos). Si la imagen falla,
   el post se publica solo con texto.
-- **Novedades:** en el tema "noticias" el bot lee `/noticias` (registro de mejoras de la app) y
-  comenta 1 o 2 mejoras reales en vez de citar tasas.
+- **Cálculos:** las cifras (variación del dólar y el euro BCV, brecha, montos de ejemplo a tasa
+  BCV, euro y P2P, y la brecha del último año de la gráfica anual) las calcula Python; la IA solo
+  las copia.
+- **Novedades:** en "detrás de cámaras" el bot lee `/noticias` (registro de mejoras de la app) y
+  comenta 1 o 2 mejoras reales en vez de citar tasas. "Mercado" se describe a grandes rasgos y
+  sin precios, porque aún está en construcción.
+- **Estadísticas:** antes de cada post el bot lee las vistas, likes y respuestas de los posts de
+  los últimos 14 días y las guarda en el historial. `python bot/post.py --stats` muestra el
+  rendimiento por formato sin publicar nada.
 - **Enlace en la respuesta:** el post principal sale sin enlace (Threads suele dar menos
   alcance a los posts con enlaces externos) y justo después el bot responde a su propio post con
-  el enlace de la sección. Los textos de esa respuesta están en `REPLY_TEMPLATES`.
+  el enlace de la sección. El texto de esa respuesta es `"respuesta"` en cada tema de `TEMAS`.
 - **Token:** cada lunes el bot renueva el token de Threads (dura 60 días) y lo guarda solo en el
   secreto usando `GH_PAT`. Si falta `GH_PAT`, verás un aviso y tendrás que renovarlo a mano.
-- **Historial:** `data/history.json` guarda los últimos 60 posts; se commitea tras cada publicación.
-- **Personalizar:** edita la lista `TEMAS` y el `SYSTEM_PROMPT` en `bot/post.py`; cambia la hora en
+- **Historial:** `data/history.json` guarda los últimos 150 posts con sus estadísticas; se
+  commitea tras cada publicación.
+- **Personalizar:** el contexto del mercado se edita arriba en este README; los formatos en la
+  lista `TEMAS` y las reglas de redacción en `SYSTEM_PROMPT` de `bot/post.py`; cambia la hora en
   las líneas `cron` del workflow (están en UTC; agrega o quita líneas para publicar más o menos veces).
 
 ## Límites a tener en cuenta

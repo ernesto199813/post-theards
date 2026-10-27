@@ -82,13 +82,15 @@ TEMAS = [
     {
         "id": "movimiento_dia",
         "angulo": (
-            "Formato NOTICIA RÁPIDA. Cuenta cómo se movió el dólar BCV respecto a ayer, como lo "
-            "contaría un amigo que siempre está pendiente de la tasa. La primera línea es la cifra "
-            "de hoy y si subió o bajó. Luego una línea de contexto humano (qué significa para el "
-            "bolsillo). Cierra con una pregunta corta y fácil de responder."
+            "Formato VARIACIÓN DEL DÍA (es el primer post de la mañana). La primera línea es la "
+            "tasa del dólar BCV de hoy y cuánto subió o bajó respecto a ayer, con las cifras de "
+            "los cálculos ya hechos (si no cambió, dilo). Puedes sumar el euro BCV si también se "
+            "movió. Luego una línea de contexto práctico usando el contexto del mercado (ej. qué "
+            "significa para quien cobra a BCV y le cobran a tasa euro). Cierra con una pregunta "
+            "corta y fácil de responder."
         ),
         "link": f"{SITE}/cotizaciones",
-        "vistas": ["cot_dolar"],
+        "vistas": ["cot_dolar", "cot_euro"],
         "respuesta": "Todas las tasas de hoy en un solo sitio 👉 {link}",
         "datos": "tasas",
     },
@@ -139,8 +141,14 @@ TEMAS = [
             {"idea": "la Tasa Libre de la calculadora: calcular con tu propia tasa, la que de verdad "
                      "te dieron, sin depender del BCV ni de Binance", "vista": "calculadora"},
             {"idea": "la tarjeta de Brecha en Cotizaciones: cuánto se separan el BCV y el Binance "
-                     "P2P en porcentaje y en bolívares, con un botón para ver la gráfica del año",
-             "vista": "cot_brecha"},
+                     "P2P en porcentaje y en bolívares", "vista": "cot_brecha"},
+            {"idea": "la gráfica anual de la Brecha (botón 'Ver gráfica anual' en Cotizaciones): ves "
+                     "lo volátil que ha estado la brecha en lo que va de año, con la actual, el "
+                     "promedio, la máxima y la mínima, por 1 mes, 3 meses, 6 meses o 1 año",
+             "vista": "grafica_brecha"},
+            {"idea": "la vista de Inicio cuando inicias sesión: ahí llevas tus gastos del mes y "
+                     "sabes en qué se te va la plata (gratis, solo necesitas crear tu cuenta)",
+             "vista": None},
             {"idea": "las tarjetas del dólar y el euro BCV en Cotizaciones: la tasa de hoy, la de "
                      "ayer y cuánto cambió", "vista": "cot_dolar"},
             {"idea": "el botón Compartir tasa en Cotizaciones, para mandarle la tasa del día a "
@@ -179,11 +187,12 @@ TEMAS = [
     {
         "id": "escena",
         "angulo": (
-            "Formato ESCENA. Una mini escena con humor, muy reconocible, de la vida diaria en "
-            "Venezuela con las tasas (el vendedor que saca la calculadora del teléfono, el '¿a qué "
-            "tasa?', el vuelto que nunca cuadra, el grupo de WhatsApp de la familia preguntando el "
-            "dólar). 2-4 líneas cortas, estilo diálogo o narración rápida. Remata con un giro "
-            "gracioso. La app, si aparece, en media línea al final."
+            "Formato SITUACIÓN REAL. Una situación concreta y reconocible del día a día con las "
+            "tasas, sacada del contexto del mercado venezolano (ej. cobras tu sueldo a tasa BCV "
+            "pero la tienda te cobra a tasa euro; preguntas '¿a qué tasa?' y cada negocio te da una "
+            "distinta; el que vende en efectivo pone el dólar a como le conviene). 2-4 líneas "
+            "cortas, contada en primera persona o como narración rápida. Cierra con una reflexión "
+            "corta o una pregunta. La app, si aparece, en media línea al final."
         ),
         "link": f"{SITE}/calculator",
         "vistas": ["calculadora", "cot_dolar"],
@@ -193,13 +202,15 @@ TEMAS = [
     {
         "id": "brecha",
         "angulo": (
-            "Formato DATO QUE DUELE. Usa la brecha entre BCV y Binance P2P de los cálculos ya hechos "
-            "y tradúcela a plata: cuántos bolívares de diferencia hay por cada 100 $. Explica en "
-            "una línea a quién le afecta (quien cobra a BCV y compra a paralelo, o al revés). "
-            "Cierra preguntando de qué lado está la gente."
+            "Formato DATO QUE DUELE. Usa la brecha entre BCV y Binance P2P de los cálculos ya hechos. "
+            "Elige UN enfoque: tradúcela a plata (cuántos bolívares de diferencia hay por cada "
+            "100 $), o compárala con cómo ha sido en lo que va de año (actual vs promedio, máxima y "
+            "mínima de los datos, para mostrar lo volátil que ha estado). Explica en una línea a "
+            "quién le afecta (quien cobra a BCV y le cobran a tasa euro o a Binance). Cierra con "
+            "una pregunta corta."
         ),
         "link": f"{SITE}/cotizaciones",
-        "vistas": ["cot_brecha"],
+        "vistas": ["cot_brecha", "grafica_brecha"],
         "respuesta": "La brecha actualizada aquí 👉 {link}",
         "datos": "tasas",
     },
@@ -227,6 +238,9 @@ VISTAS = {
     "cot_binance": {"path": "/cotizaciones", "tarjeta": 3, "desc": "el precio de compra y venta del USDT en Binance P2P"},
     "calculadora": {"path": "/calculator", "hasta": "AÑADIR TASA", "desc": "la calculadora convirtiendo dólares BCV a bolívares"},
     "noticias": {"path": "/noticias", "alto": 495, "desc": "la sección Noticias con las últimas mejoras de la app"},
+    # "abrir": texto del botón que se pulsa antes de capturar; se recorta el panel que se abre.
+    "grafica_brecha": {"path": "/cotizaciones", "abrir": "Ver gráfica anual", "alto": 980,
+                       "desc": "la gráfica de la brecha BCV vs Binance en el último año, con actual, promedio, máxima y mínima"},
     # "pais": la página elige el país por ubicación; se fuerza Venezuela en el selector.
     # Recortada antes de la lista de productos: la sección no está terminada y no se muestran precios.
     "mercado": {"path": "/mercado", "pais": "VE", "alto": 440, "desc": "la sección Mercado (en construcción)"},
@@ -237,16 +251,31 @@ TOPIC_TAG = os.getenv("THREADS_TOPIC_TAG") or "DólarBCV"
 # Métricas de cada post que se leen de la API de Threads (permiso threads_manage_insights).
 METRICAS = ["views", "likes", "replies", "reposts", "quotes", "shares"]
 
+def load_context() -> str:
+    """Contexto del mercado venezolano: la sección del README.md entre <!-- contexto:inicio -->
+    y <!-- contexto:fin -->, para editarlo en un solo lugar."""
+    m = re.search(
+        r"<!-- contexto:inicio -->(.*?)<!-- contexto:fin -->",
+        (ROOT / "README.md").read_text(encoding="utf-8"), re.DOTALL,
+    )
+    return m.group(1).strip() if m else ""
+
+
 SYSTEM_PROMPT = f"""Eres la persona venezolana que creó Cotizados ({SITE}), una web/app gratuita para
-ver la tasa del BCV, el USDT en Binance P2P y convertir montos. Escribes en tu cuenta personal de
-Threads, en primera persona, como una persona real (no como una marca ni un community manager).
+ver la tasa del BCV (dólar y euro), el USDT en Binance P2P y convertir montos. Escribes en tu
+cuenta personal de Threads, en primera persona, como una persona real (no como una marca ni un
+community manager).
 
 Tu objetivo NO es vender la app: es que la gente se detenga a leer y RESPONDA. La gente sigue
-cuentas que le informan, le hacen reír o le dan algo útil. La app se gana su lugar sola.
+cuentas que le informan o le dan algo útil. La app se gana su lugar sola.
+
+Contexto del mercado venezolano (tenlo presente al redactar; úsalo para que lo que digas sea
+realista, pero no lo repitas entero en cada post):
+{load_context()}
 
 Cómo escribir:
-- Español de Venezuela, natural, como se escribe en redes. Frases cortas. Puedes usar
-  expresiones venezolanas con moderación (chamo, de pana, ladilla, echarle un ojo, real).
+- Español de Venezuela, natural, como se escribe en redes. Frases cortas y claras. Alguna
+  expresión venezolana con moderación (de pana, echarle un ojo, real), sin forzarla.
 - La PRIMERA LÍNEA lo es todo: corta (máx. ~70 caracteres), que se entienda sola y genere
   curiosidad, sorpresa o identificación. Puede ser una cifra, una afirmación rotunda, una escena
   o una opinión. Luego un salto de línea.
@@ -285,6 +314,11 @@ FRASES_PROHIBIDAS = [
     r"^\W*cansad[oa] de",
     r"hacerte la vida",
     r"al vuelo",
+    # Clichés que el público ya no quiere leer (ver el contexto en README.md).
+    r"caramel",
+    r"malabares",
+    r"se esfuma",
+    r"\bt[ií]o\b",
 ]
 
 
@@ -367,7 +401,14 @@ def pick_topic(history: list) -> dict:
     """Elige el formato por sorteo ponderado según su puntaje medio, sin repetir los de los
     últimos posts (2, o "espacio" si el tema lo define). Los formatos con menos de 3 posts medidos
     reciben el mejor puntaje para que se sigan probando, y un 20 % de las veces se elige al azar
-    para no encasillarse. El peso es la raíz del puntaje: un post viral no acapara la rotación."""
+    para no encasillarse. El peso es la raíz del puntaje: un post viral no acapara la rotación.
+    De martes a viernes, el primer post del día es siempre la variación de la tasa."""
+    hoy = dt.datetime.now(TZ_VE)
+    if hoy.weekday() in (1, 2, 3, 4) and not any(
+        h.get("fecha", "").startswith(hoy.strftime("%Y-%m-%d")) for h in history
+    ):
+        return next(t for t in TEMAS if t["id"] == "movimiento_dia")
+
     def libre(t: dict) -> bool:
         return t["id"] not in {h.get("tema") for h in history[-t.get("espacio", 2):]}
 
@@ -429,16 +470,32 @@ def fetch_from_page() -> str | None:
         except Exception:  # noqa: BLE001
             log("Aviso: la página cargó pero no aparecieron cifras.")
         text = page.inner_text("main") if page.query_selector("main") else page.inner_text("body")
+        anual = None
+        try:
+            # La gráfica anual de la brecha (primera tarjeta) trae actual, promedio, máxima y mínima.
+            page.get_by_text("Ver gráfica anual").first.click()
+            page.wait_for_selector("[role=dialog]", timeout=10000)
+            page.wait_for_timeout(1500)
+            anual = page.inner_text("[role=dialog]")
+        except Exception as e:  # noqa: BLE001
+            log(f"Aviso: no se pudo leer la gráfica anual de la brecha ({e}).")
         browser.close()
 
-    # Limpia líneas vacías y repetidas (menús, botones).
+    # Limpia líneas vacías y repetidas (menús, botones). Las cifras no se quitan aunque se
+    # repitan: si la tasa no cambió, la de ayer es igual a la de hoy y hace falta para comparar.
     lines, seen = [], set()
     for line in (l.strip() for l in text.splitlines()):
-        if line and line not in seen:
+        if line and (line not in seen or re.fullmatch(r"[\d.,]+", line)):
             seen.add(line)
             lines.append(line)
     clean = "\n".join(lines)
-    return clean[:2500] if re.search(r"\d+[.,]\d{2}", clean) else None
+    if anual:
+        stats = dict(re.findall(r"(ACTUAL|PROMEDIO|M[ÁA]XIMA|M[ÍI]NIMA)\s+([\d.,]+%)", anual))
+        if stats:
+            clean += "\nBrecha BCV vs Binance en el último año: " + ", ".join(
+                f"{k.lower()} {v}" for k, v in stats.items()
+            )
+    return clean[:3000] if re.search(r"\d+[.,]\d{2}", clean) else None
 
 
 def fetch_news() -> str | None:
@@ -470,17 +527,20 @@ def select_country(page, code: str) -> None:
     page.wait_for_timeout(2500)  # carga los precios del país
 
 
-def pick_view(topic: dict, history: list) -> str:
-    """Elige una vista del tema, evitando repetir la imagen del post anterior."""
+def pick_view(topic: dict, history: list) -> str | None:
+    """Elige una vista del tema, evitando repetir la imagen del post anterior.
+    None = post sin imagen (partes de la app que no se pueden capturar, como el Inicio con sesión)."""
     last = history[-1].get("vista") if history else None
     opciones = [v for v in topic["vistas"] if v != last] or topic["vistas"]
     return random.choice(opciones)
 
 
-def capture_view(view_id: str) -> pathlib.Path | None:
+def capture_view(view_id: str | None) -> pathlib.Path | None:
     """Captura una vista de la web (ver VISTAS) como PNG en public/tasas.png."""
     from playwright.sync_api import sync_playwright
 
+    if not view_id:
+        return None
     view = VISTAS[view_id]
     out = IMAGE_FILE
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -518,6 +578,24 @@ def capture_view(view_id: str) -> pathlib.Path | None:
                 # La primera tarjeta incluye el aviso "Actualizado: ..." que tiene encima.
                 top = 0 if view["tarjeta"] == 0 else max(0, box["top"] - 16)
                 clip = {"x": 0, "y": top, "width": 430, "height": box["bottom"] + 20 - top}
+            elif "abrir" in view:
+                page.get_by_text(view["abrir"]).first.click()
+                page.wait_for_timeout(2500)  # animación del panel y de la gráfica
+                # Del borde superior del panel hasta la nota "Basado en el histórico…" de abajo.
+                box = page.evaluate(
+                    """() => {
+                        const d = document.querySelector('[role=dialog]');
+                        if (!d) return null;
+                        const n = [...d.querySelectorAll('p, span, div')]
+                            .filter(e => /^Basado en el hist/.test((e.innerText || '').trim())).pop();
+                        const top = d.getBoundingClientRect().top;
+                        return {top, bottom: n ? n.getBoundingClientRect().bottom + 16 : null};
+                    }"""
+                )
+                if not box:
+                    raise RuntimeError(f"no se abrió el panel de '{view['abrir']}'")
+                bottom = box["bottom"] or box["top"] + view["alto"]
+                clip = {"x": 0, "y": box["top"], "width": 430, "height": bottom - box["top"]}
             elif "hasta" in view:
                 bottom = page.evaluate(
                     """(t) => {
@@ -617,15 +695,30 @@ def rate_calcs(real_data: str | None) -> str | None:
                 f"Respecto a ayer ({fmt_bs(ayer)} Bs): {verbo} {fmt_bs(abs(diff))} Bs "
                 f"({fmt_bs(abs(diff) / ayer * 100)}%)"
             )
+    # En la página la cifra del euro viene partida en dos líneas ("993" y ",09"), seguida de la de ayer.
+    eur = re.search(r"Euro BCV\s+(\d{1,3}(?:\.\d{3})*)\s*(,\d{2})\s+" + num + "?", real_data)
+    if eur:
+        eur_ayer = parse_num(eur.group(3)) if eur.group(3) else None
+        eur = parse_num(eur.group(1) + eur.group(2))
+        line = f"Euro BCV hoy: {fmt_bs(eur)} Bs"
+        if eur_ayer and abs(eur - eur_ayer) >= 0.005:
+            verbo = "subió" if eur > eur_ayer else "bajó"
+            line += f" ({verbo} {fmt_bs(abs(eur - eur_ayer))} Bs respecto a ayer)"
+        elif eur_ayer:
+            line += " (sin cambios respecto a ayer)"
+        lines.append(line)
     if p2p:
         p2p = parse_num(p2p.group(1))
         lines.append(f"USDT Binance P2P: {fmt_bs(p2p)} Bs")
         lines.append(f"Brecha BCV vs P2P: {fmt_bs((p2p - bcv) / bcv * 100)}%")
     for usd in (1, 5, 10, 20, 50, 100):
         line = f"{usd} $ = {fmt_bs(usd * bcv)} Bs a tasa BCV"
+        if eur:
+            line += (f" | {fmt_bs(usd * eur)} Bs si el negocio cobra a tasa euro BCV"
+                     f" (diferencia con tasa BCV {fmt_bs(usd * (eur - bcv))} Bs)")
         if p2p:
             line += (f" | {fmt_bs(usd * p2p)} Bs a tasa P2P"
-                     f" | diferencia {fmt_bs(usd * (p2p - bcv))} Bs")
+                     f" | diferencia BCV vs P2P {fmt_bs(usd * (p2p - bcv))} Bs")
         lines.append(line)
     return "\n".join(lines)
 
@@ -667,7 +760,7 @@ def post_problems(text: str) -> list[str]:
     return problems
 
 
-def generate_post(topic: dict, history: list, real_data: str | None, view_id: str) -> str:
+def generate_post(topic: dict, history: list, real_data: str | None, view_id: str | None) -> str:
     # Solo las primeras líneas: si la IA ve los posts completos tiende a copiar su estructura.
     ganchos = "\n".join(
         f"- {h['texto'].strip().splitlines()[0][:90]}" for h in history[-12:] if h.get("texto")
@@ -680,7 +773,8 @@ def generate_post(topic: dict, history: list, real_data: str | None, view_id: st
         f"{topic['angulo']}\n\n"
         f"Cálculos ya hechos (cifras exactas, úsalas tal cual): {calcs or 'no disponibles'}\n\n"
         f"Datos reales del día:\n{real_data or 'no disponibles'}\n\n"
-        f"El post lleva una imagen de {VISTAS[view_id]['desc']} (no la describas).\n\n"
+        + (f"El post lleva una imagen de {VISTAS[view_id]['desc']} (no la describas).\n\n"
+           if view_id else "El post va sin imagen.\n\n") +
         f"Primeras líneas de los últimos posts (escribe algo que no se parezca a ninguna):\n{ganchos}"
     )
     mejores = best_posts(history)
@@ -804,7 +898,7 @@ def main() -> int:
     log(f"Tema del día: {topic['id']}" + (f" (idea: {idea['idea']})" if idea else ""))
     if idea:
         topic = {**topic, "angulo": f"{topic['angulo']}\nIdea de hoy: {idea['idea']}."}
-        if idea.get("vista"):
+        if "vista" in idea:  # None = sin imagen
             topic["vistas"] = [idea["vista"]]
 
     view_id = pick_view(topic, history)
