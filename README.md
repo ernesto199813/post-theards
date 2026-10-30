@@ -45,10 +45,13 @@ entre los dos comentarios).
 ## Calendario
 
 - **Horarios:** 8:47 a. m., 1:17 p. m. y 7:47 p. m. (Venezuela), en `HORARIOS` de
-  `bot/schedule.py`. GitHub retrasa o se salta a veces los cron, así que el workflow corre cada
-  30 minutos y `bot/schedule.py` publica si hoy ya pasaron más horarios que posts publicados:
-  se recuperan todos los horarios perdidos (siempre salen los 3 posts del día), con al menos
-  45 minutos entre uno y otro.
+  `bot/schedule.py`. El workflow está programado cada 30 minutos, pero GitHub solo dispara
+  algunas ejecuciones (a veces con 5-6 horas entre una y otra). Por eso `bot/schedule.py`:
+  - publica si hoy ya pasaron más horarios que posts publicados, así que se recuperan los
+    horarios perdidos (con al menos 45 minutos entre posts);
+  - si todavía no toca pero el próximo horario llega en menos de 5 h 30 min, la ejecución espera
+    dormida y publica a la hora exacta (una ejecución de las 7:46 publica a las 8:47). En repos
+    públicos los minutos de GitHub Actions son gratis.
 - **Martes a viernes:** el primer post del día es la variación de la tasa BCV respecto a ayer.
 - **Tasas en todos los posts:** cada post nombra el dólar BCV, el euro BCV y el USDT de Binance
   P2P de ese momento; si la IA no copia las tres cifras, se le pide otra versión.

@@ -2,9 +2,9 @@ name: Post diario en Threads
 
 on:
   schedule:
-    # Cada 30 minutos: GitHub retrasa horas o se salta a veces los cron, así que no se confía en
-    # una ejecución por horario. bot/schedule.py decide si toca publicar (horarios en HORARIOS:
-    # 8:47 a. m., 1:17 p. m. y 7:47 p. m. de Venezuela) y, si no, el job termina en segundos.
+    # Cada 30 minutos, aunque GitHub solo dispara algunas (a veces pasan 5-6 horas entre una y
+    # otra). bot/schedule.py decide si toca publicar (horarios en HORARIOS: 8:47 a. m., 1:17 p. m.
+    # y 7:47 p. m. de Venezuela) y, si el próximo horario está cerca, espera hasta esa hora.
     - cron: "17,47 * * * *"
   workflow_dispatch:
     inputs:
@@ -27,7 +27,7 @@ concurrency:
 jobs:
   post:
     runs-on: ubuntu-24.04   # fijo: ubuntu-latest pasa a Ubuntu 26 y podría romper Chromium
-    timeout-minutes: 15   # Threads tarda unos minutos en procesar los videos
+    timeout-minutes: 355   # hasta 5 h 30 min esperando el próximo horario, más el post
     steps:
       - uses: actions/checkout@v5
 
@@ -38,7 +38,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "due=true" >> "$GITHUB_OUTPUT"
           else
-            python3 bot/schedule.py
+            python3 bot/schedule.py --esperar
           fi
 
       - uses: actions/setup-python@v6
@@ -89,5 +89,6 @@ jobs:
             git config user.email "cotizados-bot@users.noreply.github.com"
             git add data/history.json
             git commit -m "chore: post diario $(date -u +%F)"
+            git pull --rebase -q   # el repo pudo cambiar mientras la ejecución esperaba
             git push
           fi

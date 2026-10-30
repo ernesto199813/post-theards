@@ -881,6 +881,7 @@ def publish_files(paths: list[pathlib.Path]) -> list[str]:
     # Si los archivos son idénticos a los ya subidos no hay nada que commitear.
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
         git("commit", "-m", f"chore: medios del post {dt.datetime.now(TZ_VE):%F}", "--", *rels)
+        git("pull", "-q", "--rebase")  # el repo pudo cambiar mientras la ejecución esperaba
         git("push")
     sha = git("rev-parse", "HEAD")
     repo = os.getenv("GITHUB_REPOSITORY") or re.sub(
