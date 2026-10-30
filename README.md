@@ -46,12 +46,19 @@ entre los dos comentarios).
 
 - **Horarios:** 8:47 a. m., 1:17 p. m. y 7:47 p. m. (Venezuela), en `HORARIOS` de
   `bot/schedule.py`. GitHub retrasa o se salta a veces los cron, así que el workflow corre cada
-  30 minutos y `bot/schedule.py` publica solo si ya pasó un horario y aún no hay post desde
-  entonces: un cron perdido se recupera en la siguiente ejecución.
+  30 minutos y `bot/schedule.py` publica si hoy ya pasaron más horarios que posts publicados:
+  se recuperan todos los horarios perdidos (siempre salen los 3 posts del día), con al menos
+  45 minutos entre uno y otro.
 - **Martes a viernes:** el primer post del día es la variación de la tasa BCV respecto a ayer.
+- **Tasas en todos los posts:** cada post nombra el dólar BCV, el euro BCV y el USDT de Binance
+  P2P de ese momento; si la IA no copia las tres cifras, se le pide otra versión.
+- **Frases nuevas:** la IA ve los ganchos y las preguntas de cierre de los últimos posts para no
+  repetirlos, no puede abrir con "Dólar BCV en…", no repite el argumento "cobras a BCV y pagas a
+  tasa euro" si salió en los últimos 3 posts, y en "detrás de cámaras" no repite mejoras
+  contadas en los últimos 14 días.
 - **Resto de posts:** sorteo ponderado entre los formatos según su rendimiento (vistas e
   interacciones de los últimos 14 días), sin repetir los formatos de los últimos 2 posts.
-  "Detrás de cámaras" y "Mercado" salen como mucho cada 4 posts.
+  "Detrás de cámaras" sale como mucho cada 4 posts; "Cómo funciona" y "Mercado", cada 6.
 
 ## 1. Crear la app de Threads y obtener el token
 
@@ -123,9 +130,10 @@ python bot/post.py
 - **Videos:** los temas con `"videos"` en `TEMAS` pueden salir con un video corto (10-15 s) que
   graba la app en tamaño de teléfono: el recorrido por Cotizaciones, una gráfica anual pasando de
   1 mes a 1 año o las Noticias (guiones en `GUIONES`). Se convierte a MP4 con ffmpeg
-  (`imageio-ffmpeg`) y se sube como `public/video.mp4`. Al principio la mitad de esos posts sale
-  en video; cuando hay al menos 3 posts medidos en video y 3 con imagen, la probabilidad sigue
-  al puntaje de cada uno (entre 25 % y 75 %). Si el video falla, el post sale con imágenes. Las pantallas que necesitan iniciar sesión
+  (`imageio-ffmpeg`) y se sube como `public/video.mp4`. Los primeros videos rindieron menos que
+  las imágenes, así que solo el 20 % de esos posts sale en video; cuando hay al menos 3 posts
+  medidos en video y 3 con imagen, la probabilidad sigue al puntaje de cada uno (entre 15 % y
+  75 %). Si el video falla, el post sale con imágenes. Las pantallas que necesitan iniciar sesión
   (Inicio y Nuevo Movimiento) son capturas fijas en `public/app/`; para actualizarlas, reemplaza
   esos archivos. Las capturas van a `public/tasas.png`,
   `tasas2.png`…, se suben al repo y Threads las descarga de `raw.githubusercontent.com`. Por eso

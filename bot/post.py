@@ -86,12 +86,12 @@ TEMAS = [
     {
         "id": "movimiento_dia",
         "angulo": (
-            "Formato VARIACIÓN DEL DÍA (es el primer post de la mañana). La primera línea es la "
-            "tasa del dólar BCV de hoy y cuánto subió o bajó respecto a ayer, con las cifras de "
-            "los cálculos ya hechos (si no cambió, dilo). Puedes sumar el euro BCV si también se "
-            "movió. Luego una línea de contexto práctico usando el contexto del mercado (ej. qué "
-            "significa para quien cobra a BCV y le cobran a tasa euro). Cierra con una pregunta "
-            "corta y fácil de responder."
+            "Formato VARIACIÓN DEL DÍA (es el primer post de la mañana). La primera línea es el "
+            "titular del movimiento, dicho como noticia y no como ficha (ej. 'El dólar BCV amaneció "
+            "1,89 Bs más caro'); si no cambió, el titular es otro dato del momento (cuánto se "
+            "separa el USDT del BCV, o el euro). Luego las tres tasas del momento y una línea de "
+            "qué significa en la calle (elige un ángulo distinto al de los últimos posts). Cierra "
+            "con una pregunta corta y fácil de responder."
         ),
         "link": f"{SITE}/cotizaciones",
         # Carrusel de 2: la tasa del día y su gráfica.
@@ -122,12 +122,13 @@ TEMAS = [
             "estás construyendo la sección Mercado: una comparativa de productos básicos del "
             "supermercado (harina, arroz, huevos, aceite…) para ver dónde sale más barato y armar "
             "tu lista de compras. Deja claro que todavía no está terminada y que la estás armando "
-            "poco a poco. NO menciones precios, cifras, supermercados concretos ni funciones "
-            "detalladas. Cierra pidiendo algo concreto: qué productos les gustaría poder comparar "
-            "o qué les ayudaría más al hacer el mercado."
+            "poco a poco. NO menciones precios de productos, supermercados concretos ni funciones "
+            "detalladas (las tasas del momento sí). Cierra pidiendo algo concreto: qué productos "
+            "les gustaría poder comparar o qué les ayudaría más al hacer el mercado."
         ),
         "link": f"{SITE}/mercado",
-        "espacio": 4,
+        # Los tutoriales y Mercado traen pocas vistas: como mucho uno cada 6 posts.
+        "espacio": 6,
         "vistas": ["mercado", "mercado_lista"],
         "respuesta": "Así va quedando, todavía en construcción 👉 {link}",
         "datos": "ninguno",
@@ -174,6 +175,7 @@ TEMAS = [
                      "y yo leo todos los mensajes", "vistas": ["cot_resumen", "calculadora"]},
         ],
         "link": SITE,
+        "espacio": 6,
         "vistas": ["calculadora", "cot_resumen"],
         "respuesta": "Pruébala tú mismo 👉 {link}",
         "datos": "tasas",
@@ -369,9 +371,15 @@ Cómo escribir:
 - La PRIMERA LÍNEA lo es todo: corta (máx. ~70 caracteres), que se entienda sola y genere
   curiosidad, sorpresa o identificación. Puede ser una cifra, una afirmación rotunda, una escena
   o una opinión. Luego un salto de línea.
-- Entre 120 y 320 caracteres en total. Nunca más de 420. Párrafos de 1-2 líneas.
+- Entre 150 y 360 caracteres en total. Nunca más de 460. Párrafos de 1-2 líneas.
 - 0 o 1 emoji, solo si suma.
 - Sigue el formato que se te indica; cada formato tiene una estructura distinta.
+- Cada post nombra las tres tasas de ese momento (dólar BCV, euro BCV y USDT en Binance P2P)
+  con sus cifras exactas. Nunca en la primera línea. Varía cómo las presentas: dentro de la
+  escena, comparándolas, ordenadas de menor a mayor, o en una línea corta propia con · entre
+  ellas. No arranques esa parte siempre igual ("Ahorita con el dólar BCV en…" ya está gastado).
+- Frases nuevas en cada post: no reutilices ganchos, giros ni preguntas de cierre de los
+  últimos posts. Busca otra imagen, otro ejemplo de la calle, otro verbo.
 
 Prohibido (hace que todos los posts suenen iguales y la gente los ignora):
 - Saludos al inicio ("Buenas tardes", "Buenos días", "Hola", "por aquí").
@@ -409,7 +417,13 @@ FRASES_PROHIBIDAS = [
     r"malabares",
     r"se esfuma",
     r"\bt[ií]o\b",
+    # Primera línea de ficha ("Dólar BCV en 888,12 Bs y euro…"): no detiene a nadie.
+    r"\A\W*(el\s+)?(d[oó]lar\s+)?bcv\s+(en|a|hoy)\b",
 ]
+
+# El argumento "cobras a BCV y te cobran a tasa euro" cansa si sale seguido: solo si no apareció
+# en los últimos 3 posts (ver recent_euro_angle).
+EURO_ANGULO = r"(cobr|pag|sueldo|marc)\w*[^.\n]{0,70}tasa euro|tasa euro[^.\n]{0,70}(cobr|pag|sueldo)"
 
 
 def log(msg: str) -> None:
@@ -498,16 +512,17 @@ def medio(h: dict) -> str:
 
 
 def video_share(history: list) -> float:
-    """Probabilidad de publicar en video cuando el tema lo admite. Empieza en 50 % y, con al
-    menos 3 posts medidos en video y 3 con imagen (los últimos 20 de cada uno), sigue al puntaje:
-    video / (video + imagen), entre 25 % y 75 % para seguir probando ambos."""
+    """Probabilidad de publicar en video cuando el tema lo admite. Empieza en 20 % (los primeros
+    videos rindieron menos que las imágenes) y, con al menos 3 posts medidos en video y 3 con
+    imagen (los últimos 20 de cada uno), sigue al puntaje: video / (video + imagen), entre 15 % y
+    75 % para seguir probando ambos."""
     medias = {}
     for m in ("video", "imagen"):
         posts = [h for h in measured(history) if medio(h) == m][-20:]
         if len(posts) < 3:
-            return 0.5
+            return 0.2
         medias[m] = sum(map(engagement, posts)) / len(posts)
-    return min(0.75, max(0.25, medias["video"] / ((medias["video"] + medias["imagen"]) or 1)))
+    return min(0.75, max(0.15, medias["video"] / ((medias["video"] + medias["imagen"]) or 1)))
 
 
 def pick_topic(history: list) -> dict:
@@ -902,21 +917,37 @@ def fmt_bs(x: float) -> str:
     return f"{x:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
 
 
-def rate_calcs(real_data: str | None) -> str | None:
-    """Saca BCV, BCV de ayer y Binance P2P del texto de /cotizaciones y hace las cuentas en
-    Python (montos en bolívares, variación, brecha), para que la IA no tenga que calcular."""
+def parse_rates(real_data: str | None) -> dict:
+    """Saca del texto de /cotizaciones el dólar BCV (y el de ayer), el euro BCV (y el de ayer)
+    y el USDT en Binance P2P. Las que no aparezcan quedan en None."""
+    r = dict.fromkeys(["bcv", "ayer", "eur", "eur_ayer", "p2p"])
     if not real_data:
-        return None
+        return r
     num = r"(\d{1,3}(?:\.\d{3})*,\d{2})"
-    bcv = re.search(r"BCV Oficial\s+" + num, real_data)
-    p2p = re.search(r"Binance P2P\s+" + num, real_data)
+    for key, pat in (("bcv", r"BCV Oficial\s+"), ("p2p", r"Binance P2P\s+"), ("ayer", r"Hace 1 d\S*\s+")):
+        m = re.search(pat + num, real_data)
+        r[key] = parse_num(m.group(1)) if m else None
+    # En la página la cifra del euro viene partida en dos líneas ("993" y ",09"), seguida de la de ayer.
+    eur = re.search(r"Euro BCV\s+(\d{1,3}(?:\.\d{3})*)\s*(,\d{2})\s+" + num + "?", real_data)
+    if eur:
+        r["eur"] = parse_num(eur.group(1) + eur.group(2))
+        r["eur_ayer"] = parse_num(eur.group(3)) if eur.group(3) else None
+    return r
+
+
+def rate_calcs(real_data: str | None) -> str | None:
+    """Hace en Python las cuentas con las tasas de /cotizaciones (montos en bolívares,
+    variación, brecha), para que la IA no tenga que calcular."""
+    rates = parse_rates(real_data)
+    bcv, ayer, eur, eur_ayer, p2p = (rates[k] for k in ("bcv", "ayer", "eur", "eur_ayer", "p2p"))
     if not bcv:
         return None
-    bcv = parse_num(bcv.group(1))
-    lines = [f"Dólar BCV hoy: {fmt_bs(bcv)} Bs"]
-    ayer = re.search(r"Hace 1 d\S*\s+" + num, real_data)
+    hora = dt.datetime.now(TZ_VE).strftime("%I:%M %p").lstrip("0").lower()
+    lines = [f"Tasas de este momento ({hora}): dólar BCV {fmt_bs(bcv)} Bs"
+             + (f" · euro BCV {fmt_bs(eur)} Bs" if eur else "")
+             + (f" · USDT Binance P2P {fmt_bs(p2p)} Bs" if p2p else ""),
+             f"Dólar BCV hoy: {fmt_bs(bcv)} Bs"]
     if ayer:
-        ayer = parse_num(ayer.group(1))
         diff = bcv - ayer
         if abs(diff) < 0.005:
             lines.append(f"Respecto a ayer ({fmt_bs(ayer)} Bs): sin cambios")
@@ -926,11 +957,7 @@ def rate_calcs(real_data: str | None) -> str | None:
                 f"Respecto a ayer ({fmt_bs(ayer)} Bs): {verbo} {fmt_bs(abs(diff))} Bs "
                 f"({fmt_bs(abs(diff) / ayer * 100)}%)"
             )
-    # En la página la cifra del euro viene partida en dos líneas ("993" y ",09"), seguida de la de ayer.
-    eur = re.search(r"Euro BCV\s+(\d{1,3}(?:\.\d{3})*)\s*(,\d{2})\s+" + num + "?", real_data)
     if eur:
-        eur_ayer = parse_num(eur.group(3)) if eur.group(3) else None
-        eur = parse_num(eur.group(1) + eur.group(2))
         line = f"Euro BCV hoy: {fmt_bs(eur)} Bs"
         if eur_ayer and abs(eur - eur_ayer) >= 0.005:
             verbo = "subió" if eur > eur_ayer else "bajó"
@@ -939,13 +966,12 @@ def rate_calcs(real_data: str | None) -> str | None:
             line += " (sin cambios respecto a ayer)"
         lines.append(line)
     if p2p:
-        p2p = parse_num(p2p.group(1))
         lines.append(f"USDT Binance P2P: {fmt_bs(p2p)} Bs")
         lines.append(f"Brecha BCV vs P2P: {fmt_bs((p2p - bcv) / bcv * 100)}%")
     for usd in (1, 5, 10, 20, 50, 100):
         line = f"{usd} $ = {fmt_bs(usd * bcv)} Bs a tasa BCV"
         if eur:
-            line += (f" | {fmt_bs(usd * eur)} Bs si el negocio cobra a tasa euro BCV"
+            line += (f" | {fmt_bs(usd * eur)} Bs a tasa euro BCV"
                      f" (diferencia con tasa BCV {fmt_bs(usd * (eur - bcv))} Bs)")
         if p2p:
             line += (f" | {fmt_bs(usd * p2p)} Bs a tasa P2P"
@@ -986,20 +1012,31 @@ def ask_gemini(system: str, user_msg: str) -> str:
 def post_problems(text: str) -> list[str]:
     """Muletillas prohibidas o largo excesivo; lista vacía si el post está bien."""
     problems = [p for p in FRASES_PROHIBIDAS if re.search(p, text, re.IGNORECASE | re.MULTILINE)]
-    if len(text) > 420:
-        problems.append(f"demasiado largo ({len(text)} caracteres, máximo 420)")
+    if len(text) > 460:
+        problems.append(f"demasiado largo ({len(text)} caracteres, máximo 460)")
     return problems
 
 
+def recent_euro_angle(history: list) -> bool:
+    """¿Alguno de los últimos 3 posts usó el argumento de cobrar a BCV y pagar a tasa euro?"""
+    return any(re.search(EURO_ANGULO, h.get("texto") or "", re.IGNORECASE) for h in history[-3:])
+
+
 def generate_post(
-    topic: dict, history: list, real_data: str | None, shots: list[dict], guion: str | None = None
+    topic: dict, history: list, real_data: str | None, shots: list[dict], guion: str | None = None,
+    rates: str | None = None,
 ) -> str:
+    """real_data son los datos del tema (tasas o novedades); rates, el texto de /cotizaciones,
+    porque todos los posts nombran las tasas del momento."""
+    textos = [h["texto"].strip() for h in history if h.get("texto")]
     # Solo las primeras líneas: si la IA ve los posts completos tiende a copiar su estructura.
-    ganchos = "\n".join(
-        f"- {h['texto'].strip().splitlines()[0][:90]}" for h in history[-12:] if h.get("texto")
-    ) or "(ninguno todavía)"
+    ganchos = "\n".join(f"- {t.splitlines()[0][:90]}" for t in textos[-12:]) or "(ninguno todavía)"
+    cierres = "\n".join(f"- {t.splitlines()[-1][:120]}" for t in textos[-8:] if t.endswith("?"))
     hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y, %I:%M %p")
-    calcs = rate_calcs(real_data) if topic["datos"] == "tasas" else None
+    calcs = rate_calcs(rates)
+    # Cifras que el post tiene que nombrar tal cual: dólar BCV, euro BCV y USDT.
+    exigidas = [fmt_bs(v) for k, v in parse_rates(rates).items() if k in ("bcv", "eur", "p2p") and v]
+    sin_euro = recent_euro_angle(history)
     if guion:
         medios = f"El post lleva un video corto de la app: {GUIONES[guion]['desc']} (no lo describas).\n\n"
     elif shots:
@@ -1016,6 +1053,20 @@ def generate_post(
         f"{medios}"
         f"Primeras líneas de los últimos posts (escribe algo que no se parezca a ninguna):\n{ganchos}"
     )
+    if cierres:
+        user_msg += f"\n\nPreguntas de cierre ya usadas (no las repitas ni con otras palabras):\n{cierres}"
+    if exigidas:
+        user_msg += f"\n\nNombra en el post estas tres cifras tal cual: {', '.join(exigidas)} Bs."
+    if sin_euro:
+        user_msg += ("\n\nEl argumento de cobrar a dólar BCV y pagar a tasa euro ya salió en los "
+                     "últimos posts: esta vez no lo uses (el euro solo como cifra).")
+    if topic["id"] == "novedades":
+        contadas = "\n".join(
+            f"- {h['texto'].splitlines()[0][:120]}" for h in history
+            if h.get("tema") == "novedades" and h.get("texto") and post_age_hours(h) < 14 * 24
+        )
+        if contadas:
+            user_msg += f"\n\nMejoras que ya contaste en los últimos 14 días (elige otra):\n{contadas}"
     mejores = best_posts(history)
     if mejores:
         user_msg += (
@@ -1030,6 +1081,11 @@ def generate_post(
         text = re.sub(r"[ \t]*https?://\S+", "", text)
         text = re.sub(r"[ \t]*#\w+", "", text).strip()
         problems = post_problems(text)
+        faltan = [c for c in exigidas if c not in text]
+        if faltan:
+            problems.append(f"faltan las tasas del momento: {', '.join(faltan)} Bs")
+        if sin_euro and re.search(EURO_ANGULO, text, re.IGNORECASE):
+            problems.append("repite el argumento de cobrar a BCV y pagar a tasa euro")
         if not problems:
             return text
         log(f"Post descartado ({'; '.join(problems)}), reintentando ({intento + 1}/3):\n{text}\n")
@@ -1161,10 +1217,11 @@ def main() -> int:
     shots, estilo = plan_images(topic, history)
     guion = plan_video(topic, history)
     log(f"Video: {guion}" if guion else f"Imágenes ({estilo}): {shots or 'ninguna'}")
-    # Según el tema, los datos son las tasas, las mejoras de la app o los precios del mercado.
-    fetchers = {"noticias": fetch_news, "tasas": fetch_real_data, "ninguno": lambda: None}
-    data = fetchers[topic["datos"]]()
-    text = generate_post(topic, history, data, shots, guion)
+    # Las tasas del momento van en todos los posts; según el tema, los datos son además las
+    # mejoras de la app o nada más.
+    rates = fetch_real_data()
+    data = {"noticias": fetch_news, "tasas": lambda: rates, "ninguno": lambda: None}[topic["datos"]]()
+    text = generate_post(topic, history, data, shots, guion, rates)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
     reply_text = topic["respuesta"].format(link=topic["link"])
     log(f"Respuesta con el enlace:\n{reply_text}\n")
