@@ -310,6 +310,10 @@ VISTAS = {
                          "desc": "la gráfica de la brecha BCV vs Binance del último año, en modo claro"},
 }
 
+# Los videos rindieron menos que las fotos: apagados. Con True vuelven a salir en los temas con
+# "videos", con la probabilidad de video_share.
+USAR_VIDEOS = False
+
 # Videos cortos (10-15 s): grabaciones de pantalla de la app en tamaño de teléfono. Cada paso es
 # (acción, valor): "pausa" ms; "bajar"/"subir" píxeles con desplazamiento suave; "grafica" abre la
 # "Ver gráfica anual" de esa tarjeta (como en VISTAS); "rango" pulsa ese periodo de la gráfica.
@@ -503,7 +507,8 @@ def stats_report(history: list) -> str:
         if posts:
             lines.append(f"  [{m}]{'':<{12 - len(m)}} {len(posts):>2} posts | puntaje (últimos 20) "
                          f"{sum(map(engagement, posts)) / len(posts):6.0f}")
-    lines.append(f"  Probabilidad de video en los temas que lo admiten: {video_share(history):.0%}")
+    lines.append(f"  Probabilidad de video en los temas que lo admiten: "
+                 f"{video_share(history):.0%}" if USAR_VIDEOS else "  Videos: apagados (USAR_VIDEOS)")
     return "\n".join(lines)
 
 
@@ -693,7 +698,7 @@ def plan_video(topic: dict, history: list) -> str | None:
     """Elige el video del post (ver GUIONES) o None si va con imágenes: solo en temas con
     "videos", con la probabilidad de video_share y priorizando los que no salieron en los últimos
     6 posts."""
-    if not topic.get("videos") or random.random() >= video_share(history):
+    if not USAR_VIDEOS or not topic.get("videos") or random.random() >= video_share(history):
         return None
     recientes = {h.get("video") for h in history[-6:]}
     return random.choice([g for g in topic["videos"] if g not in recientes] or topic["videos"])

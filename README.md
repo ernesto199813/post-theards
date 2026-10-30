@@ -127,7 +127,9 @@ python bot/post.py
   la calculadora, `/noticias` y `/mercado`; ver `VISTAS` y `"vistas"` en `TEMAS`). El bot prioriza
   las que no salieron en los últimos 6 posts y alterna modo claro y oscuro. Algunos temas
   publican un carrusel (`"imagenes"` en `TEMAS`).
-- **Videos:** los temas con `"videos"` en `TEMAS` pueden salir con un video corto (10-15 s) que
+- **Videos (apagados):** rindieron menos que las fotos, así que todos los posts salen con
+  imágenes. Para volver a probarlos, pon `USAR_VIDEOS = True` en `bot/post.py`. Encendidos, los
+  temas con `"videos"` en `TEMAS` pueden salir con un video corto (10-15 s) que
   graba la app en tamaño de teléfono: el recorrido por Cotizaciones, una gráfica anual pasando de
   1 mes a 1 año o las Noticias (guiones en `GUIONES`). Se convierte a MP4 con ffmpeg
   (`imageio-ffmpeg`) y se sube como `public/video.mp4`. Los primeros videos rindieron menos que
