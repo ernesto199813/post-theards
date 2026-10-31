@@ -38,6 +38,9 @@ entre los dos comentarios).
 - Tono: cercano e informado, como alguien que entiende cómo se mueve el mercado y lo explica
   claro. Respetuoso con la situación de la gente: se habla de plata que cuesta ganar. Humor solo
   si sale natural, nunca burlón.
+- **Nunca decir "paralelo"** (dólar paralelo, mercado paralelo) ni "dólar negro": está prohibido
+  en Venezuela. El tipo de cambio más alto se nombra como **USDT** (Binance P2P), y la brecha es
+  "entre el BCV y el USDT".
 - Evitar clichés gastados: el vuelto en caramelos, el tío del grupo de WhatsApp, "hacer
   malabares", "la quincena se esfuma".
 <!-- contexto:fin -->

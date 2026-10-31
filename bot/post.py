@@ -394,6 +394,9 @@ Prohibido (hace que todos los posts suenen iguales y la gente los ignora):
   Si hace falta, como mucho una mención casual al final ("lo tengo en la app", "link abajo").
 - Hashtags y enlaces (el enlace se publica aparte, en una respuesta).
 - Frases de relleno corporativas ("hacerte la vida más fácil", "sin complicaciones", "al vuelo").
+- Las palabras "paralelo", "dólar paralelo", "mercado paralelo", "dólar negro" o "mercado negro":
+  están prohibidas en Venezuela. La tasa más alta se nombra siempre como USDT (Binance P2P), y
+  la brecha es entre el BCV y el USDT.
 
 Datos:
 - Usa SOLO las cifras de "Cálculos ya hechos" o de "Datos reales del día", copiadas exactamente.
@@ -421,6 +424,9 @@ FRASES_PROHIBIDAS = [
     r"malabares",
     r"se esfuma",
     r"\bt[ií]o\b",
+    # Términos que no se pueden usar en Venezuela: la tasa alta se nombra como USDT.
+    r"paralel",
+    r"(mercado|d[oó]lar)\s+negro",
     # Primera línea de ficha ("Dólar BCV en 888,12 Bs y euro…"): no detiene a nadie.
     r"\A\W*(el\s+)?(d[oó]lar\s+)?bcv\s+(en|a|hoy)\b",
 ]
@@ -905,6 +911,9 @@ def fetch_real_data() -> str | None:
     try:
         data = fetch_from_api(url) if url else fetch_from_page()
         if data:
+            # La tarjeta de la brecha dice "Oficial vs Mercado Paralelo": esa palabra no se usa en
+            # los posts (ver el contexto en README.md), así que la IA ni la ve.
+            data = re.sub(r"(?i)mercado paralelo|paralelo", "USDT", data)
             log(f"Datos reales obtenidos:\n{data}\n")
             return data
     except Exception as e:  # noqa: BLE001
@@ -1100,6 +1109,8 @@ def generate_post(
             "Escribe otra distinta que cumpla todas las reglas."
         )
 
+    # Los términos prohibidos en Venezuela no salen nunca, aunque la IA insista.
+    text = re.sub(r"(?i)\b(el\s+)?(d[oó]lar\s+|mercado\s+)?(paralelo|negro)\b", "el USDT", text)
     if len(text) <= THREADS_MAX_CHARS:
         log("Aviso: se publica la última versión aunque no cumple todas las reglas.")
         return text
