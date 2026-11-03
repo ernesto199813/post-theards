@@ -776,7 +776,6 @@ def fetch_world_news(history: list) -> dict | None:
 # símbolo -> (nombre, unidad).
 MATERIAS_PRIMAS = {
     "BZ=F": ("Petróleo Brent", "barril"),
-    "CL=F": ("Petróleo WTI", "barril"),
     "GC=F": ("Oro", "onza"),
     "SI=F": ("Plata", "onza"),
     "HG=F": ("Cobre", "libra"),
@@ -819,21 +818,20 @@ def data_block(materias: list[dict], rates: str | None) -> str:
     """Bloque fijo de cifras al final del post de economía mundial: petróleo, metales (con su
     variación en 24 h) y las tasas del momento. Lo arma Python para que las cifras sean exactas
     y el texto de la IA quepa en el límite de Threads."""
-    corto = {"Petróleo Brent": "Brent", "Petróleo WTI": "WTI"}
-
-    def item(m: dict) -> str:
+    def item(m: dict, nombre: bool = True) -> str:
         pct = m["pct"]
         flecha = "" if pct is None else " =" if abs(pct) < 0.05 else \
             f" {'▲' if pct > 0 else '▼'}{fmt_bs(abs(pct))[:-1]} %"
-        return f"{corto.get(m['nombre'], m['nombre'])} {m['precio']} ${flecha}"
+        return f"{m['nombre'] + ' ' if nombre else ''}{m['precio']} ${flecha}"
 
-    petroleo = [item(m) for m in materias if m["nombre"].startswith("Petróleo")]
+    # Solo el Brent: es la referencia mundial (y la del crudo venezolano); dos precios confunden.
+    brent = next((m for m in materias if m["nombre"] == "Petróleo Brent"), None)
     metales = [item(m) for m in materias if not m["nombre"].startswith("Petróleo")]
     r = parse_rates(rates)
     tasas = [f"{n} {fmt_bs(r[k])}" for k, n in (("bcv", "BCV"), ("eur", "Euro"), ("p2p", "USDT")) if r[k]]
     lineas = []
-    if petroleo:
-        lineas.append("🛢️ Barril de petróleo: " + " · ".join(petroleo) + " (24 h)")
+    if brent:
+        lineas.append(f"🛢️ Barril de petróleo (Brent): {item(brent, nombre=False)} (24 h)")
     if metales:
         lineas.append("🪙 " + " · ".join(metales))
     if tasas:
