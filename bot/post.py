@@ -277,8 +277,10 @@ TEMAS = [
             "importa a alguien en Venezuela que cobra y gasta en bolívares, dólares o USDT (precio "
             "del petróleo, fuerza del dólar, inflación, remesas, cripto…), con prudencia: 'puede', "
             "'suele', nunca predicciones seguras. Menciona el medio de donde viene ('según "
-            "Bloomberg Línea'). Usa SOLO los hechos y cifras del titular y el resumen: no agregues "
-            "datos, nombres ni cifras que no estén ahí. Las tasas del momento en una línea corta. "
+            "Investing.com') pegado al hecho, nunca a tu explicación: lo que significa para "
+            "Venezuela es tu opinión, no la del medio. Usa SOLO los hechos y cifras del titular y el resumen (a veces solo "
+            "hay titular): no agregues datos, nombres, causas ni cifras que no estén ahí. Las tasas "
+            "del momento en una línea corta. "
             "Cierra con una pregunta corta."
         ),
         "link": f"{SITE}/cotizaciones",
@@ -361,18 +363,23 @@ GUIONES = {
     },
 }
 
-# Medios de noticias económicas (RSS gratuitos con resumen y enlace directo) para el formato
-# economia_mundial. CNBC viene en inglés: la IA lo cuenta en español.
+# Medios de economía mundial (RSS gratuitos con enlace directo) para el formato economia_mundial.
+# Investing.com trae solo el titular; CNBC viene en inglés (la IA lo cuenta en español).
 FUENTES_NOTICIAS = {
-    "Bloomberg Línea": "https://www.bloomberglinea.com/arc/outboundfeeds/rss/?outputType=xml",
-    "El País": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/economia/portada",
-    "DW": "https://rss.dw.com/xml/rss-sp-all",
-    "CNBC": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664",
+    "Investing.com": "https://es.investing.com/rss/news_14.rss",  # economía
+    "Investing.com ": "https://es.investing.com/rss/news_11.rss",  # materias primas
+    "Investing.com  ": "https://es.investing.com/rss/news_1.rss",  # divisas
+    "CNBC": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258",
 }
-# Temas que mueven el bolsillo de quien vive en Venezuela, con su peso al elegir la noticia.
+# Temas que mueven el bolsillo de quien vive en Venezuela, con su peso al elegir la noticia. Las
+# noticias locales de otros países (negativo) no son economía mundial.
 CLAVES_NOTICIAS = {
     r"venezuel|caracas|pdvsa|chevron": 5,
-    r"petr[oó]leo|crudo|brent|opep|\boil\b|crude|opec": 4,
+    r"mundial|global|world|china|ee\.\s?uu|eeuu|estados unidos|estadounidense|\bu\.?s\.?\b|fmi|\bimf\b|"
+    r"g20|\bg7\b|ir[aá]n|rusia|ucrania|europa|zona euro|jap[oó]n": 2,
+    r"argentin|milei|chile|colombi|m[eé]xic|per[uú]\b|brasil|brazil|ecuador|uruguay|bolivia|"
+    r"espa[nñ]a|madrid|catalu|feij[oó]o|s[aá]nchez|canad|australi": -4,
+    r"petr[oó]leo|crudo|brent|opep|\boil\b|crude|opec": 5,  # lo que más mueve a Venezuela
     r"\bfed\b|reserva federal|tasas? de inter[eé]s|interest rate|powell|banco central europeo|\bbce\b|lagarde": 4,
     r"d[oó]lar|dollar|divisa|tipo de cambio|currency": 3,
     r"inflaci[oó]n|inflation|precios? al consumidor|\bipc\b|\bcpi\b": 3,
@@ -737,16 +744,21 @@ def fetch_world_news(history: list) -> dict | None:
             titulo = (it.findtext("title") or "").strip()
             resumen = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", it.findtext("description") or "")).strip()
             link = (it.findtext("link") or "").strip()
+            pub = (it.findtext("pubDate") or "").strip()
             try:
-                fecha = parsedate_to_datetime(it.findtext("pubDate"))
+                fecha = parsedate_to_datetime(pub)
             except Exception:  # noqa: BLE001
-                continue
+                try:  # Investing.com: "2026-11-03 01:48:58", en UTC
+                    fecha = dt.datetime.fromisoformat(pub).replace(tzinfo=dt.timezone.utc)
+                except ValueError:
+                    continue
             if not titulo or not link or link in usadas or ahora - fecha > dt.timedelta(hours=30):
                 continue
-            texto = f"{titulo} {resumen}".lower()
-            puntaje = sum(peso for clave, peso in CLAVES_NOTICIAS.items() if re.search(clave, texto))
-            if puntaje >= 3:
-                candidatas.append((puntaje, fecha, {"fuente": fuente, "titulo": titulo,
+            # Solo el titular: Investing.com no trae resumen y un resumen largo no debe sumar más.
+            puntaje = sum(peso for clave, peso in CLAVES_NOTICIAS.items()
+                          if re.search(clave, titulo.lower()))
+            if puntaje >= 4:
+                candidatas.append((puntaje, fecha, {"fuente": fuente.strip(), "titulo": titulo,
                                                     "resumen": resumen[:600], "url": link}))
     if not candidatas:
         log("Aviso: no hay noticias económicas nuevas.")

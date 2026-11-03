@@ -59,11 +59,12 @@ entre los dos comentarios).
     dormida y publica a la hora exacta (una ejecución de las 7:46 publica a las 8:47). En repos
     públicos los minutos de GitHub Actions son gratis.
 - **Martes a viernes:** el primer post del día es la variación de la tasa BCV respecto a ayer.
-- **Todos los días, el segundo post es economía mundial:** el bot lee los RSS de Bloomberg
-  Línea, El País Economía, DW y CNBC (`FUENTES_NOTICIAS` en `bot/post.py`), elige la noticia de
-  las últimas 30 h que más toque el bolsillo (petróleo, Fed, dólar, inflación, cripto, remesas,
-  Venezuela; ver `CLAVES_NOTICIAS`) y que no se haya contado, y la IA la explica con el medio
-  como fuente. El enlace a la noticia va en la respuesta. Si no hay noticia, sale otro formato.
+- **Todos los días, el segundo post es economía mundial:** el bot lee los RSS de Investing.com
+  en español (economía, materias primas y divisas) y CNBC Economía (`FUENTES_NOTICIAS` en
+  `bot/post.py`). Elige, por el titular, la noticia mundial de las últimas 30 h que más toque el
+  bolsillo (petróleo, Fed, dólar, inflación, oro, cripto, China, EE. UU.; ver `CLAVES_NOTICIAS`).
+  Las noticias locales de otros países (Argentina, México, España…) restan puntos, y nunca se
+  repite una noticia. La IA la explica con el medio como fuente. El enlace a la noticia va en la respuesta. Si no hay noticia, sale otro formato.
 - **Tasas en todos los posts:** cada post nombra el dólar BCV, el euro BCV y el USDT de Binance
   P2P de ese momento; si la IA no copia las tres cifras, se le pide otra versión.
 - **Frases nuevas:** la IA ve los ganchos y las preguntas de cierre de los últimos posts para no
