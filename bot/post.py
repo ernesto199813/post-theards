@@ -833,7 +833,7 @@ def data_block(materias: list[dict], rates: str | None) -> str:
     tasas = [f"{n} {fmt_bs(r[k])}" for k, n in (("bcv", "BCV"), ("eur", "Euro"), ("p2p", "USDT")) if r[k]]
     lineas = []
     if petroleo:
-        lineas.append("🛢️ " + " · ".join(petroleo) + " (24 h)")
+        lineas.append("🛢️ Barril de petróleo: " + " · ".join(petroleo) + " (24 h)")
     if metales:
         lineas.append("🪙 " + " · ".join(metales))
     if tasas:
