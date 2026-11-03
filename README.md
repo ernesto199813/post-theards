@@ -64,7 +64,10 @@ entre los dos comentarios).
   `bot/post.py`). Elige, por el titular, la noticia mundial de las últimas 30 h que más toque el
   bolsillo (petróleo, Fed, dólar, inflación, oro, cripto, China, EE. UU.; ver `CLAVES_NOTICIAS`).
   Las noticias locales de otros países (Argentina, México, España…) restan puntos, y nunca se
-  repite una noticia. La IA la explica con el medio como fuente. El enlace a la noticia va en la respuesta. Si no hay noticia, sale otro formato.
+  repite una noticia. La IA la explica con el medio como fuente. Al final, Python agrega un
+  bloque fijo con los precios del petróleo (Brent, WTI) y los metales (oro, plata, cobre) de
+  Yahoo Finance con su variación en 24 horas, y las tasas BCV, euro y USDT. La IA no copia esas
+  cifras, así que siempre son exactas. El enlace a la noticia va en la respuesta. Si no hay noticia, sale otro formato.
 - **Tasas en todos los posts:** cada post nombra el dólar BCV, el euro BCV y el USDT de Binance
   P2P de ese momento; si la IA no copia las tres cifras, se le pide otra versión.
 - **Frases nuevas:** la IA ve los ganchos y las preguntas de cierre de los últimos posts para no

@@ -279,9 +279,12 @@ TEMAS = [
             "'suele', nunca predicciones seguras. Menciona el medio de donde viene ('según "
             "Investing.com') pegado al hecho, nunca a tu explicación: lo que significa para "
             "Venezuela es tu opinión, no la del medio. Usa SOLO los hechos y cifras del titular y el resumen (a veces solo "
-            "hay titular): no agregues datos, nombres, causas ni cifras que no estén ahí. Las tasas "
-            "del momento en una línea corta. "
-            "Cierra con una pregunta corta."
+            "hay titular): no agregues datos, nombres, causas ni cifras que no estén ahí. Los "
+            "precios del petróleo y los metales y las tasas van en un bloque aparte al final: "
+            "puedes comentar hacia dónde se movieron, pero esos precios no vienen del medio "
+            "(nunca después de 'según…'). Si el titular dice que algo sube y en 24 horas bajó (o "
+            "al revés), cuéntalo con honestidad: la noticia es el último movimiento. Cierra con "
+            "una pregunta corta."
         ),
         "link": f"{SITE}/cotizaciones",
         "vistas": ["cot_resumen", "grafica_dolar", "grafica_binance", "grafica_euro"],
@@ -769,6 +772,75 @@ def fetch_world_news(history: list) -> dict | None:
     return candidatas[0][2]
 
 
+# Precios de materias primas para economia_mundial (futuros de Yahoo Finance, gratis y sin clave):
+# símbolo -> (nombre, unidad).
+MATERIAS_PRIMAS = {
+    "BZ=F": ("Petróleo Brent", "barril"),
+    "CL=F": ("Petróleo WTI", "barril"),
+    "GC=F": ("Oro", "onza"),
+    "SI=F": ("Plata", "onza"),
+    "HG=F": ("Cobre", "libra"),
+}
+
+
+def fetch_commodities() -> list[dict]:
+    """Precio actual de cada materia prima y su variación en las últimas 24 horas, calculada
+    aquí para que la IA solo copie. Se compara con el precio por horas de hace 24 h y no con el
+    "cierre anterior": la serie diaria de Yahoo a veces no trae el cierre de ayer y la
+    comparación saltaba al de varios días antes. Las que fallen se omiten."""
+    out = []
+    hace_24h = time.time() - 24 * 3600
+    for sym, (nombre, unidad) in MATERIAS_PRIMAS.items():
+        try:
+            r = requests.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}",
+                             params={"range": "5d", "interval": "1h"}, timeout=20,
+                             headers={"User-Agent": "Mozilla/5.0"})
+            res = r.json()["chart"]["result"][0]
+            precio = res["meta"]["regularMarketPrice"]
+            serie = zip(res["timestamp"], res["indicators"]["quote"][0]["close"])
+            anteriores = [c for t, c in serie if c and t <= hace_24h]
+            anterior = anteriores[-1] if anteriores else None
+        except Exception as e:  # noqa: BLE001
+            log(f"Aviso: no se pudo leer el precio de {nombre} ({e}).")
+            continue
+        cambio = (precio - anterior) / anterior * 100 if anterior else None
+        if cambio is not None and abs(cambio) < 0.05:
+            cambio_txt = "sin cambios en 24 horas"
+        elif cambio is not None:
+            cambio_txt = f"{'subió' if cambio > 0 else 'bajó'} {fmt_bs(abs(cambio))} % en 24 horas"
+        else:
+            cambio_txt = None
+        out.append({"nombre": nombre, "unidad": unidad, "precio": fmt_bs(precio),
+                    "cambio": cambio_txt, "pct": cambio})
+    return out
+
+
+def data_block(materias: list[dict], rates: str | None) -> str:
+    """Bloque fijo de cifras al final del post de economía mundial: petróleo, metales (con su
+    variación en 24 h) y las tasas del momento. Lo arma Python para que las cifras sean exactas
+    y el texto de la IA quepa en el límite de Threads."""
+    corto = {"Petróleo Brent": "Brent", "Petróleo WTI": "WTI"}
+
+    def item(m: dict) -> str:
+        pct = m["pct"]
+        flecha = "" if pct is None else " =" if abs(pct) < 0.05 else \
+            f" {'▲' if pct > 0 else '▼'}{fmt_bs(abs(pct))[:-1]} %"
+        return f"{corto.get(m['nombre'], m['nombre'])} {m['precio']} ${flecha}"
+
+    petroleo = [item(m) for m in materias if m["nombre"].startswith("Petróleo")]
+    metales = [item(m) for m in materias if not m["nombre"].startswith("Petróleo")]
+    r = parse_rates(rates)
+    tasas = [f"{n} {fmt_bs(r[k])}" for k, n in (("bcv", "BCV"), ("eur", "Euro"), ("p2p", "USDT")) if r[k]]
+    lineas = []
+    if petroleo:
+        lineas.append("🛢️ " + " · ".join(petroleo) + " (24 h)")
+    if metales:
+        lineas.append("🪙 " + " · ".join(metales))
+    if tasas:
+        lineas.append("💵 " + " · ".join(tasas) + " Bs")
+    return "\n".join(lineas)
+
+
 def select_country(page, code: str) -> None:
     """En /mercado el país sale por ubicación (desde GitHub Actions no es Venezuela). La opción
     puede venir marcada sin aplicarse, así que se cambia a otra y luego a la pedida."""
@@ -1137,11 +1209,11 @@ def ask_gemini(system: str, user_msg: str) -> str:
     raise RuntimeError("Gemini no respondió.")
 
 
-def post_problems(text: str) -> list[str]:
+def post_problems(text: str, max_len: int = 460) -> list[str]:
     """Muletillas prohibidas o largo excesivo; lista vacía si el post está bien."""
     problems = [p for p in FRASES_PROHIBIDAS if re.search(p, text, re.IGNORECASE | re.MULTILINE)]
-    if len(text) > 460:
-        problems.append(f"demasiado largo ({len(text)} caracteres, máximo 460)")
+    if len(text) > max_len:
+        problems.append(f"demasiado largo ({len(text)} caracteres, máximo {max_len})")
     return problems
 
 
@@ -1152,10 +1224,11 @@ def recent_euro_angle(history: list) -> bool:
 
 def generate_post(
     topic: dict, history: list, real_data: str | None, shots: list[dict], guion: str | None = None,
-    rates: str | None = None,
+    rates: str | None = None, pie: str = "",
 ) -> str:
-    """real_data son los datos del tema (tasas o novedades); rates, el texto de /cotizaciones,
-    porque todos los posts nombran las tasas del momento."""
+    """real_data son los datos del tema (tasas, novedades o noticia); rates, el texto de
+    /cotizaciones, porque todos los posts nombran las tasas del momento. pie es un bloque fijo de
+    cifras que se agrega al final (economía mundial); entonces la IA no copia cifras."""
     textos = [h["texto"].strip() for h in history if h.get("texto")]
     # Solo las primeras líneas: si la IA ve los posts completos tiende a copiar su estructura.
     ganchos = "\n".join(f"- {t.splitlines()[0][:90]}" for t in textos[-12:]) or "(ninguno todavía)"
@@ -1163,7 +1236,10 @@ def generate_post(
     hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y, %I:%M %p")
     calcs = rate_calcs(rates)
     # Cifras que el post tiene que nombrar tal cual: dólar BCV, euro BCV y USDT.
-    exigidas = [fmt_bs(v) for k, v in parse_rates(rates).items() if k in ("bcv", "eur", "p2p") and v]
+    exigidas = [] if pie else [
+        fmt_bs(v) for k, v in parse_rates(rates).items() if k in ("bcv", "eur", "p2p") and v]
+    # Con pie, el texto de la IA le deja espacio dentro del límite de Threads (500, con margen).
+    max_texto = 495 - len(pie) - 2 if pie else 460
     sin_euro = recent_euro_angle(history)
     if guion:
         medios = f"El post lleva un video corto de la app: {GUIONES[guion]['desc']} (no lo describas).\n\n"
@@ -1185,6 +1261,13 @@ def generate_post(
         user_msg += f"\n\nPreguntas de cierre ya usadas (no las repitas ni con otras palabras):\n{cierres}"
     if exigidas:
         user_msg += f"\n\nNombra en el post estas tres cifras tal cual: {', '.join(exigidas)} Bs."
+    if pie:
+        user_msg += (
+            f"\n\nAl final del post el sistema agrega este bloque de cifras:\n{pie}\n"
+            "No escribas tú ninguna de esas cifras (ni tasas, ni precios, ni porcentajes): puedes "
+            "decir si el petróleo o el oro suben o bajan, coherente con el bloque. Tu texto, sin "
+            f"el bloque, en máximo {max_texto} caracteres, y la pregunta de cierre al final de tu texto."
+        )
     if sin_euro:
         user_msg += ("\n\nEl argumento de cobrar a dólar BCV y pagar a tasa euro ya salió en los "
                      "últimos posts: esta vez no lo uses (el euro solo como cifra).")
@@ -1208,14 +1291,17 @@ def generate_post(
         # El enlace va solo en la respuesta y el tema se marca con topic_tag, no con hashtags.
         text = re.sub(r"[ \t]*https?://\S+", "", text)
         text = re.sub(r"[ \t]*#\w+", "", text).strip()
-        problems = post_problems(text)
+        problems = post_problems(text, max_texto)
         faltan = [c for c in exigidas if c not in text]
         if faltan:
-            problems.append(f"faltan las tasas del momento: {', '.join(faltan)} Bs")
+            problems.append(f"faltan estas cifras, copiadas tal cual: {', '.join(faltan)}")
+        repetidas = [c for c in re.findall(r"\d[\d.]*,\d+", pie) if c in text]
+        if repetidas:
+            problems.append(f"repite cifras del bloque ({', '.join(repetidas)}): van solo en el bloque")
         if sin_euro and re.search(EURO_ANGULO, text, re.IGNORECASE):
             problems.append("repite el argumento de cobrar a BCV y pagar a tasa euro")
         if not problems:
-            return text
+            return f"{text}\n\n{pie}" if pie else text
         log(f"Post descartado ({'; '.join(problems)}), reintentando ({intento + 1}/3):\n{text}\n")
         user_msg += (
             f"\n\nTu versión anterior no sirve por: {'; '.join(problems)}. "
@@ -1224,6 +1310,8 @@ def generate_post(
 
     # Los términos prohibidos en Venezuela no salen nunca, aunque la IA insista.
     text = re.sub(r"(?i)\b(el\s+)?(d[oó]lar\s+|mercado\s+)?(paralelo|negro)\b", "el USDT", text)
+    if pie:
+        text = f"{text}\n\n{pie}"
     if len(text) <= THREADS_MAX_CHARS:
         log("Aviso: se publica la última versión aunque no cumple todas las reglas.")
         return text
@@ -1355,16 +1443,23 @@ def main() -> int:
     # Las tasas del momento van en todos los posts; según el tema, los datos son además las
     # mejoras de la app, la noticia económica del día o nada más.
     rates = fetch_real_data()
+    materias = fetch_commodities() if topic["datos"] == "economia" else []
+    # En economía mundial las cifras (petróleo, metales y tasas) van en un bloque fijo al final.
+    pie = data_block(materias, rates) if topic["datos"] == "economia" else ""
     data = {
         "noticias": fetch_news,
         "tasas": lambda: rates,
         # Sin "paralelo" (ver el contexto en README.md): las noticias de otros países lo usan.
         "economia": lambda: re.sub(
             r"(?i)(d[oó]lar\s+|mercado\s+)?paralelo", "dólar no oficial",
-            f"Noticia de {noticia['fuente']}:\nTitular: {noticia['titulo']}\nResumen: {noticia['resumen']}"),
+            f"Noticia de {noticia['fuente']}:\nTitular: {noticia['titulo']}\nResumen: {noticia['resumen']}"
+            + "\n\nPrecios de mercado en este momento (no son del medio de la noticia):"
+            + "".join(f"\n{m['nombre']}: {m['precio']} $ por {m['unidad']}"
+                      + (f" ({m['cambio']})" if m["cambio"] else "")
+                      for m in materias)),
         "ninguno": lambda: None,
     }[topic["datos"]]()
-    text = generate_post(topic, history, data, shots, guion, rates)
+    text = generate_post(topic, history, data, shots, guion, rates, pie)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
     reply_text = topic["respuesta"].format(link=topic["link"], fuente=noticia["url"] if noticia else "")
     log(f"Respuesta con el enlace:\n{reply_text}\n")
