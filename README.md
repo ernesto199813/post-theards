@@ -28,15 +28,18 @@ entre los dos comentarios).
   **tasa euro**, no la del dólar BCV.
 - El **dólar en efectivo** no tiene una tasa fija: cada comercio o persona lo pone como le
   conviene. Por eso conviene saber las tasas antes de pagar, cobrar o cambiar.
-- Cotizados existe para eso: ver todas las tasas juntas (dólar BCV, euro BCV, Binance P2P), la
-  brecha entre ellas y cómo ha variado en el año, y calcular con la tasa que de verdad te estén
-  aplicando (Tasa Libre).
+- Cotizados existe para eso: es una app para **gestionar tus ingresos y gastos** y **ver las
+  tasas del mercado venezolano** (dólar BCV, euro BCV, USDT en Binance P2P), la brecha entre
+  ellas y cómo ha variado en el año, y calcular con la tasa que de verdad te estén aplicando
+  (Tasa Libre). También tiene noticias de mejoras y una sección de Mercado en construcción.
+- La cuenta de Threads es además un **medio informativo**: cada día cuenta una noticia de la
+  economía mundial y qué puede significar para el bolsillo en Venezuela.
 - Con una cuenta gratis, Cotizados también sirve para **llevar tus cuentas**: en Inicio ves el
   balance del mes con ingresos y gastos, y anotas cada movimiento en USDT, bolívares o efectivo
   (la app muestra su equivalente en bolívares), con de dónde vino (sueldo, pago de cliente,
   venta, transferencia). Útil para quien cobra en varias monedas y no sabe en qué se le va la plata.
-- Tono: cercano e informado, como alguien que entiende cómo se mueve el mercado y lo explica
-  claro. Respetuoso con la situación de la gente: se habla de plata que cuesta ganar. Humor solo
+- Tono: conversación natural con alguien que sabe de finanzas personales. Cercano e informado,
+  como quien entiende cómo se mueve el mercado y lo explica claro, con consejos prácticos. Respetuoso con la situación de la gente: se habla de plata que cuesta ganar. Humor solo
   si sale natural, nunca burlón.
 - **Nunca decir "paralelo"** (dólar paralelo, mercado paralelo) ni "dólar negro": está prohibido
   en Venezuela. El tipo de cambio más alto se nombra como **USDT** (Binance P2P), y la brecha es
@@ -56,6 +59,11 @@ entre los dos comentarios).
     dormida y publica a la hora exacta (una ejecución de las 7:46 publica a las 8:47). En repos
     públicos los minutos de GitHub Actions son gratis.
 - **Martes a viernes:** el primer post del día es la variación de la tasa BCV respecto a ayer.
+- **Todos los días, el segundo post es economía mundial:** el bot lee los RSS de Bloomberg
+  Línea, El País Economía, DW y CNBC (`FUENTES_NOTICIAS` en `bot/post.py`), elige la noticia de
+  las últimas 30 h que más toque el bolsillo (petróleo, Fed, dólar, inflación, cripto, remesas,
+  Venezuela; ver `CLAVES_NOTICIAS`) y que no se haya contado, y la IA la explica con el medio
+  como fuente. El enlace a la noticia va en la respuesta. Si no hay noticia, sale otro formato.
 - **Tasas en todos los posts:** cada post nombra el dólar BCV, el euro BCV y el USDT de Binance
   P2P de ese momento; si la IA no copia las tres cifras, se le pide otra versión.
 - **Frases nuevas:** la IA ve los ganchos y las preguntas de cierre de los últimos posts para no

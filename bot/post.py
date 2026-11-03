@@ -267,6 +267,25 @@ TEMAS = [
         "respuesta": "Aquí la tienes 👉 {link}",
         "datos": "tasas",
     },
+    {
+        # Segundo post de cada día (ver pick_topic): una noticia económica mundial del día.
+        "id": "economia_mundial",
+        "angulo": (
+            "Formato ECONOMÍA MUNDIAL. Eres un medio informativo además de una app: cuenta la "
+            "noticia económica de hoy que viene en los datos. Primera línea: qué pasó, dicho claro y "
+            "con gancho (sin titular de periódico copiado). Luego, en 1 o 2 líneas, por qué le "
+            "importa a alguien en Venezuela que cobra y gasta en bolívares, dólares o USDT (precio "
+            "del petróleo, fuerza del dólar, inflación, remesas, cripto…), con prudencia: 'puede', "
+            "'suele', nunca predicciones seguras. Menciona el medio de donde viene ('según "
+            "Bloomberg Línea'). Usa SOLO los hechos y cifras del titular y el resumen: no agregues "
+            "datos, nombres ni cifras que no estén ahí. Las tasas del momento en una línea corta. "
+            "Cierra con una pregunta corta."
+        ),
+        "link": f"{SITE}/cotizaciones",
+        "vistas": ["cot_resumen", "grafica_dolar", "grafica_binance", "grafica_euro"],
+        "respuesta": "Fuente: {fuente}\nY las tasas al momento 👉 {link}",
+        "datos": "economia",
+    },
 ]
 
 # Capturas posibles para las imágenes del post. Cada una se toma en modo claro u oscuro (se
@@ -342,6 +361,28 @@ GUIONES = {
     },
 }
 
+# Medios de noticias económicas (RSS gratuitos con resumen y enlace directo) para el formato
+# economia_mundial. CNBC viene en inglés: la IA lo cuenta en español.
+FUENTES_NOTICIAS = {
+    "Bloomberg Línea": "https://www.bloomberglinea.com/arc/outboundfeeds/rss/?outputType=xml",
+    "El País": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/economia/portada",
+    "DW": "https://rss.dw.com/xml/rss-sp-all",
+    "CNBC": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664",
+}
+# Temas que mueven el bolsillo de quien vive en Venezuela, con su peso al elegir la noticia.
+CLAVES_NOTICIAS = {
+    r"venezuel|caracas|pdvsa|chevron": 5,
+    r"petr[oó]leo|crudo|brent|opep|\boil\b|crude|opec": 4,
+    r"\bfed\b|reserva federal|tasas? de inter[eé]s|interest rate|powell|banco central europeo|\bbce\b|lagarde": 4,
+    r"d[oó]lar|dollar|divisa|tipo de cambio|currency": 3,
+    r"inflaci[oó]n|inflation|precios? al consumidor|\bipc\b|\bcpi\b": 3,
+    r"bitcoin|cripto|crypto|stablecoin|usdt|tether|binance": 3,
+    r"remesa|remittance": 3,
+    r"oro\b|\bgold\b": 2,
+    r"arancel|tariff|recesi[oó]n|recession|wall street|bolsa|s&p|nasdaq|mercados?\b|markets?\b": 2,
+    r"econom|financ|deuda|debt|\bpib\b|\bgdp\b|empleo|jobs": 1,
+}
+
 # Tema de Threads (topic tag) con el que se etiqueta cada post; reemplaza a los hashtags del texto.
 TOPIC_TAG = os.getenv("THREADS_TOPIC_TAG") or "DólarBCV"
 # Métricas de cada post que se leen de la API de Threads (permiso threads_manage_insights).
@@ -357,10 +398,20 @@ def load_context() -> str:
     return m.group(1).strip() if m else ""
 
 
-SYSTEM_PROMPT = f"""Eres la persona venezolana que creó Cotizados ({SITE}), una web/app gratuita para
-ver la tasa del BCV (dólar y euro), el USDT en Binance P2P y convertir montos. Escribes en tu
-cuenta personal de Threads, en primera persona, como una persona real (no como una marca ni un
-community manager).
+SYSTEM_PROMPT = f"""Eres la persona venezolana que creó Cotizados ({SITE}) y sabes de finanzas
+personales. Cotizados es una app gratuita para llevar tus ingresos y gastos (en bolívares,
+dólares, USDT o efectivo) y ver las tasas del mercado venezolano: dólar y euro BCV, USDT en
+Binance P2P, la brecha entre ellas y su historia en el año; además tiene calculadora con Tasa
+Libre, noticias de mejoras y una sección de Mercado en construcción. Escribes en tu cuenta
+personal de Threads, en primera persona, como una persona real (no como una marca ni un
+community manager). Tu cuenta también es un medio informativo: cuentas lo que pasa en la
+economía y qué significa para el bolsillo.
+
+Tu voz: la de un amigo que sabe de plata y te lo explica tomando un café. Conversas, no
+reportas: hablas de tú, explicas el porqué de las cosas en palabras simples, das una idea
+práctica que se pueda usar hoy (ordenar gastos, comparar tasas antes de pagar, separar lo del
+mes, no dejar los bolívares quietos…) y opinas con criterio, sin sermones ni tecnicismos. Si
+usas un término (brecha, inflación, tasa de interés), lo aterrizas en una frase.
 
 Tu objetivo NO es vender la app: es que la gente se detenga a leer y RESPONDA. La gente sigue
 cuentas que le informan o le dan algo útil. La app se gana su lugar sola.
@@ -370,8 +421,10 @@ realista, pero no lo repitas entero en cada post):
 {load_context()}
 
 Cómo escribir:
-- Español de Venezuela, natural, como se escribe en redes. Frases cortas y claras. Alguna
-  expresión venezolana con moderación (de pana, echarle un ojo, real), sin forzarla.
+- Español de Venezuela, natural, como se habla en una conversación. Frases cortas y claras.
+  Alguna expresión venezolana con moderación (de pana, echarle un ojo, real), sin forzarla.
+- Nada de tono de noticiero ni de ficha técnica: aunque des cifras, que suene a alguien
+  hablando ("fíjate que…", "lo que yo haría es…", "ojo con esto"), sin abusar de esas muletillas.
 - La PRIMERA LÍNEA lo es todo: corta (máx. ~70 caracteres), que se entienda sola y genere
   curiosidad, sorpresa o identificación. Puede ser una cifra, una afirmación rotunda, una escena
   o una opinión. Luego un salto de línea.
@@ -403,7 +456,10 @@ Datos:
   NUNCA inventes ni calcules cifras por tu cuenta. Si no hay datos, no menciones cifras.
 - Si los datos son las novedades de la app (sección Noticias), habla solo de mejoras que aparezcan
   ahí; no inventes funciones.
-- No prometas ganancias ni des consejos de inversión.
+- No prometas ganancias ni des consejos de inversión (comprar tal cripto, acción o divisa).
+  Los consejos de finanzas personales (presupuesto, gastos, comparar tasas) sí.
+- Si los datos son una noticia económica, cuenta solo lo que dicen el titular y el resumen, y
+  di de qué medio viene.
 
 Devuelve solo el texto del post, sin comillas ni explicaciones."""
 
@@ -536,22 +592,25 @@ def video_share(history: list) -> float:
     return min(0.75, max(0.15, medias["video"] / ((medias["video"] + medias["imagen"]) or 1)))
 
 
-def pick_topic(history: list) -> dict:
+def pick_topic(history: list, sin_noticia: bool = False) -> dict:
     """Elige el formato por sorteo ponderado según su puntaje medio, sin repetir los de los
     últimos posts (2, o "espacio" si el tema lo define). Los formatos con menos de 3 posts medidos
     reciben el mejor puntaje para que se sigan probando, y un 20 % de las veces se elige al azar
     para no encasillarse. El peso es la raíz del puntaje: un post viral no acapara la rotación.
-    De martes a viernes, el primer post del día es siempre la variación de la tasa."""
+    De martes a viernes, el primer post del día es siempre la variación de la tasa, y todos los
+    días el segundo es la noticia económica mundial (si falla, main sortea otro con sin_noticia)."""
     hoy = dt.datetime.now(TZ_VE)
-    if hoy.weekday() in (1, 2, 3, 4) and not any(
-        h.get("fecha", "").startswith(hoy.strftime("%Y-%m-%d")) for h in history
-    ):
+    posts_hoy = sum(h.get("fecha", "").startswith(hoy.strftime("%Y-%m-%d")) for h in history)
+    if posts_hoy == 0 and hoy.weekday() in (1, 2, 3, 4):
         return next(t for t in TEMAS if t["id"] == "movimiento_dia")
+    if posts_hoy == 1 and not sin_noticia:
+        return next(t for t in TEMAS if t["id"] == "economia_mundial")
 
     def libre(t: dict) -> bool:
         return t["id"] not in {h.get("tema") for h in history[-t.get("espacio", 2):]}
 
-    opciones = [t for t in TEMAS if libre(t)] or TEMAS
+    rotacion = [t for t in TEMAS if t["id"] != "economia_mundial"]
+    opciones = [t for t in rotacion if libre(t)] or rotacion
     datos = measured(history)
     medias = {}
     for t in TEMAS:
@@ -654,6 +713,48 @@ def fetch_news() -> str | None:
     except Exception as e:  # noqa: BLE001
         log(f"Aviso: no se pudieron leer las novedades ({e}).")
         return None
+
+
+def fetch_world_news(history: list) -> dict | None:
+    """La noticia económica del día para economia_mundial: lee los RSS de FUENTES_NOTICIAS, se
+    queda con las de las últimas 30 h que no se hayan contado ya y elige la de más puntaje según
+    CLAVES_NOTICIAS (la más reciente si empatan). None si ninguna es de economía."""
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+
+    usadas = {h.get("noticia_url") for h in history}
+    ahora = dt.datetime.now(dt.timezone.utc)
+    candidatas = []
+    for fuente, url in FUENTES_NOTICIAS.items():
+        try:
+            r = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+            r.raise_for_status()
+            items = ET.fromstring(r.content).findall(".//item")
+        except Exception as e:  # noqa: BLE001
+            log(f"Aviso: no se pudo leer {fuente} ({e}).")
+            continue
+        for it in items:
+            titulo = (it.findtext("title") or "").strip()
+            resumen = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", it.findtext("description") or "")).strip()
+            link = (it.findtext("link") or "").strip()
+            try:
+                fecha = parsedate_to_datetime(it.findtext("pubDate"))
+            except Exception:  # noqa: BLE001
+                continue
+            if not titulo or not link or link in usadas or ahora - fecha > dt.timedelta(hours=30):
+                continue
+            texto = f"{titulo} {resumen}".lower()
+            puntaje = sum(peso for clave, peso in CLAVES_NOTICIAS.items() if re.search(clave, texto))
+            if puntaje >= 3:
+                candidatas.append((puntaje, fecha, {"fuente": fuente, "titulo": titulo,
+                                                    "resumen": resumen[:600], "url": link}))
+    if not candidatas:
+        log("Aviso: no hay noticias económicas nuevas.")
+        return None
+    candidatas.sort(key=lambda c: (c[0], c[1]), reverse=True)
+    for puntaje, fecha, n in candidatas[:5]:
+        log(f"Noticia candidata ({puntaje}): [{n['fuente']}] {n['titulo']}")
+    return candidatas[0][2]
 
 
 def select_country(page, code: str) -> None:
@@ -1221,6 +1322,11 @@ def main() -> int:
         update_stats(history, token)
     log(f"Rendimiento por formato (posts con más de 24 h):\n{stats_report(history)}")
     topic = pick_topic(history)
+    noticia = None
+    if topic["datos"] == "economia":
+        noticia = fetch_world_news(history)
+        if not noticia:
+            topic = pick_topic(history, sin_noticia=True)
     idea = pick_idea(topic, history)
     log(f"Tema del día: {topic['id']}" + (f" (idea: {idea['idea']})" if idea else ""))
     if idea:
@@ -1235,12 +1341,20 @@ def main() -> int:
     guion = plan_video(topic, history)
     log(f"Video: {guion}" if guion else f"Imágenes ({estilo}): {shots or 'ninguna'}")
     # Las tasas del momento van en todos los posts; según el tema, los datos son además las
-    # mejoras de la app o nada más.
+    # mejoras de la app, la noticia económica del día o nada más.
     rates = fetch_real_data()
-    data = {"noticias": fetch_news, "tasas": lambda: rates, "ninguno": lambda: None}[topic["datos"]]()
+    data = {
+        "noticias": fetch_news,
+        "tasas": lambda: rates,
+        # Sin "paralelo" (ver el contexto en README.md): las noticias de otros países lo usan.
+        "economia": lambda: re.sub(
+            r"(?i)(d[oó]lar\s+|mercado\s+)?paralelo", "dólar no oficial",
+            f"Noticia de {noticia['fuente']}:\nTitular: {noticia['titulo']}\nResumen: {noticia['resumen']}"),
+        "ninguno": lambda: None,
+    }[topic["datos"]]()
     text = generate_post(topic, history, data, shots, guion, rates)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
-    reply_text = topic["respuesta"].format(link=topic["link"])
+    reply_text = topic["respuesta"].format(link=topic["link"], fuente=noticia["url"] if noticia else "")
     log(f"Respuesta con el enlace:\n{reply_text}\n")
     video = record_video(guion, estilo) if guion else None
     if not video:
@@ -1298,6 +1412,7 @@ def main() -> int:
             "rangos": [] if guion else [s.get("rango") for s in shots],
             "estilo": estilo,
             "idea": idea["idea"] if idea else None,
+            "noticia_url": noticia["url"] if noticia else None,
             "texto": text,
         }
     )
