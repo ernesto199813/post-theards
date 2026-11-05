@@ -283,12 +283,19 @@ TEMAS = [
             "precios del petróleo y los metales y las tasas van en un bloque aparte al final: "
             "puedes comentar hacia dónde se movieron, pero esos precios no vienen del medio "
             "(nunca después de 'según…'). Si el titular dice que algo sube y en 24 horas bajó (o "
-            "al revés), cuéntalo con honestidad: la noticia es el último movimiento. Cierra con "
-            "una pregunta corta."
+            "al revés), cuéntalo con honestidad: la noticia es el último movimiento. Al final, "
+            "una línea corta y natural que mencione Cotizados por su nombre (que ahí llevas tus "
+            "ingresos y gastos y ves las tasas al día, o algo así con tus palabras), sin tono de "
+            "anuncio y sin decir 'link abajo' ni 'en los comentarios': este post no lleva "
+            "respuesta. Cierra con una pregunta corta."
         ),
         "link": f"{SITE}/cotizaciones",
         "vistas": ["cot_resumen", "grafica_dolar", "grafica_binance", "grafica_euro"],
-        "respuesta": "Fuente: {fuente}\nY las tasas al momento 👉 {link}",
+        # Sin respuesta: la app se menciona en el propio post (en los comentarios llegaba a menos gente).
+        "respuesta": None,
+        "menciona_app": True,
+        # Tema de Threads más visitado para noticias económicas que el de las tasas.
+        "tag": "Investing",
         "datos": "economia",
     },
 ]
@@ -1298,6 +1305,11 @@ def generate_post(
             problems.append(f"repite cifras del bloque ({', '.join(repetidas)}): van solo en el bloque")
         if sin_euro and re.search(EURO_ANGULO, text, re.IGNORECASE):
             problems.append("repite el argumento de cobrar a BCV y pagar a tasa euro")
+        if topic.get("menciona_app"):
+            if "cotizados" not in text.lower():
+                problems.append("falta mencionar Cotizados al final")
+            if re.search(r"(?i)link abajo|enlace abajo|comentarios", text):
+                problems.append("habla de un enlace o comentarios, pero este post no lleva respuesta")
         if not problems:
             return f"{text}\n\n{pie}" if pie else text
         log(f"Post descartado ({'; '.join(problems)}), reintentando ({intento + 1}/3):\n{text}\n")
@@ -1342,7 +1354,7 @@ def wait_container(creation_id: str, token: str, intentos: int = 10) -> None:
 
 def publish_to_threads(
     text: str, token: str, reply_to_id: str | None = None, image_urls: list[str] | None = None,
-    video_url: str | None = None,
+    video_url: str | None = None, tag: str | None = None,
 ) -> str:
     """Publica texto, texto con un video, con una imagen o, con varias imágenes, un carrusel."""
     params = {"media_type": "TEXT", "text": text}
@@ -1362,7 +1374,7 @@ def publish_to_threads(
     if reply_to_id:
         params["reply_to_id"] = reply_to_id
     else:
-        params["topic_tag"] = TOPIC_TAG
+        params["topic_tag"] = tag or TOPIC_TAG
     try:
         container = threads_request("POST", "/me/threads", token, **params)
     except RuntimeError as e:
@@ -1459,8 +1471,8 @@ def main() -> int:
     }[topic["datos"]]()
     text = generate_post(topic, history, data, shots, guion, rates, pie)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
-    reply_text = topic["respuesta"].format(link=topic["link"], fuente=noticia["url"] if noticia else "")
-    log(f"Respuesta con el enlace:\n{reply_text}\n")
+    reply_text = topic["respuesta"].format(link=topic["link"]) if topic["respuesta"] else None
+    log(f"Respuesta con el enlace:\n{reply_text}\n" if reply_text else "Sin respuesta con enlace.")
     video = record_video(guion, estilo) if guion else None
     if not video:
         guion = None
@@ -1475,7 +1487,7 @@ def main() -> int:
         try:
             video_url = publish_files([video])[0]
             log(f"Video publicado: {video_url}")
-            post_id = publish_to_threads(text, token, video_url=video_url)
+            post_id = publish_to_threads(text, token, video_url=video_url, tag=topic.get("tag"))
         except Exception as e:  # noqa: BLE001
             log(f"Aviso: no se pudo publicar con video ({e}); se publica con imágenes.")
             guion = None
@@ -1485,22 +1497,24 @@ def main() -> int:
             image_urls = publish_files(images)
             log(f"Imágenes publicadas: {image_urls}")
             try:
-                post_id = publish_to_threads(text, token, image_urls=image_urls)
+                post_id = publish_to_threads(text, token, image_urls=image_urls, tag=topic.get("tag"))
             except Exception as e:  # noqa: BLE001
                 if len(image_urls) == 1:
                     raise
                 log(f"Aviso: no se pudo publicar el carrusel ({e}); se publica con una imagen.")
-                post_id = publish_to_threads(text, token, image_urls=image_urls[:1])
+                post_id = publish_to_threads(text, token, image_urls=image_urls[:1],
+                                             tag=topic.get("tag"))
         except Exception as e:  # noqa: BLE001
             log(f"Aviso: no se pudo publicar con imágenes ({e}); se publica solo el texto.")
     if not post_id:
-        post_id = publish_to_threads(text, token)
+        post_id = publish_to_threads(text, token, tag=topic.get("tag"))
     log(f"Publicado en Threads. ID: {post_id}")
 
     reply_id = None
     try:
-        reply_id = publish_to_threads(reply_text, token, reply_to_id=post_id)
-        log(f"Respuesta con el enlace publicada. ID: {reply_id}")
+        if reply_text:
+            reply_id = publish_to_threads(reply_text, token, reply_to_id=post_id)
+            log(f"Respuesta con el enlace publicada. ID: {reply_id}")
     except Exception as e:  # noqa: BLE001
         log(f"Aviso: el post salió, pero no se pudo publicar la respuesta con el enlace ({e}).")
 

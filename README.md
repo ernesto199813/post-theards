@@ -67,7 +67,10 @@ entre los dos comentarios).
   repite una noticia. La IA la explica con el medio como fuente. Al final, Python agrega un
   bloque fijo con el precio del barril de petróleo (Brent) y los metales (oro, plata, cobre) de
   Yahoo Finance con su variación en 24 horas, y las tasas BCV, euro y USDT. La IA no copia esas
-  cifras, así que siempre son exactas. El enlace a la noticia va en la respuesta. Si no hay noticia, sale otro formato.
+  cifras, así que siempre son exactas. Este post sale con el tema de Threads `Investing` (más
+  visitado que el de las tasas), sin respuesta ni enlaces: la IA cierra mencionando Cotizados en
+  el propio texto, porque el enlace en los comentarios llegaba a menos gente. Si no hay noticia,
+  sale otro formato.
 - **Tasas en todos los posts:** cada post nombra el dólar BCV, el euro BCV y el USDT de Binance
   P2P de ese momento; si la IA no copia las tres cifras, se le pide otra versión.
 - **Frases nuevas:** la IA ve los ganchos y las preguntas de cierre de los últimos posts para no
