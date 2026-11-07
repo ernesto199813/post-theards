@@ -71,8 +71,15 @@ entre los dos comentarios).
   visitado que el de las tasas), sin respuesta ni enlaces: la IA cierra mencionando Cotizados en
   el propio texto, porque el enlace en los comentarios llegaba a menos gente. Si no hay noticia,
   sale otro formato.
-- **Tasas en todos los posts:** cada post nombra el dólar BCV, el euro BCV y el USDT de Binance
-  P2P de ese momento; si la IA no copia las tres cifras, se le pide otra versión.
+- **Tasas en todos los posts:** cada post termina con una línea fija armada en Python con el
+  dólar BCV, el euro BCV y el USDT de Binance P2P de ese momento. Así el texto de la IA queda
+  corto (máx. 320 caracteres, los posts cortos son los que más vistas tienen) y usa como mucho
+  una o dos cifras, las que cuentan la historia.
+- **Ganchos:** antes de escribir, la IA propone 5 primeras líneas con ganchos distintos
+  (escena, plata concreta, confesión, empatía, afirmación) y elige la que más detendría a alguien
+  en Threads; las que tienen muletillas prohibidas se descartan. Las reglas de ganchos, de
+  preguntas fáciles de responder y contra frases de IA vienen de las skills `hook-writer-sms`,
+  `copywriting` y `antislop-copywriting`.
 - **Frases nuevas:** la IA ve los ganchos y las preguntas de cierre de los últimos posts para no
   repetirlos, no puede abrir con "Dólar BCV en…", no repite el argumento "cobras a BCV y pagas a
   tasa euro" si salió en los últimos 3 posts, y en "detrás de cámaras" no repite mejoras

@@ -86,12 +86,13 @@ TEMAS = [
     {
         "id": "movimiento_dia",
         "angulo": (
-            "Formato VARIACIÓN DEL DÍA (es el primer post de la mañana). La primera línea es el "
-            "titular del movimiento, dicho como noticia y no como ficha (ej. 'El dólar BCV amaneció "
-            "1,89 Bs más caro'); si no cambió, el titular es otro dato del momento (cuánto se "
-            "separa el USDT del BCV, o el euro). Luego las tres tasas del momento y una línea de "
-            "qué significa en la calle (elige un ángulo distinto al de los últimos posts). Cierra "
-            "con una pregunta corta y fácil de responder."
+            "Formato VARIACIÓN DEL DÍA (es el primer post de la mañana). Cuenta el movimiento del "
+            "dólar BCV traducido a plata, no como ficha: usa 'Por cada 100 $' de los cálculos (ej. "
+            "'Hoy 100 $ te cuestan 167 Bs más que ayer') o una escena de la mañana (el que paga el "
+            "pasaje, la panadería, el que cobra hoy). Si no cambió, el gancho es otro dato del "
+            "momento (cuánto se separa el USDT del BCV por cada 100 $). Luego una línea de qué "
+            "significa en la calle (un ángulo distinto al de los últimos posts). Cierra con una "
+            "pregunta corta y fácil de responder."
         ),
         "link": f"{SITE}/cotizaciones",
         # Carrusel de 2: la tasa del día y su gráfica.
@@ -99,6 +100,7 @@ TEMAS = [
         "vistas": ["cot_dolar", "cot_euro", "cot_resumen", "grafica_dolar", "grafica_euro"],
         "videos": ["video_dolar", "video_euro", "video_cotizaciones"],
         "respuesta": "Todas las tasas de hoy en un solo sitio 👉 {link}",
+        "gancho": "lo que cambió hoy para el bolsillo, o una escena de la mañana",
         "datos": "tasas",
     },
     {
@@ -113,6 +115,7 @@ TEMAS = [
         "vistas": ["calculadora", "cot_brecha", "cot_binance", "cot_resumen"],
         "videos": ["video_cotizaciones", "video_binance"],
         "respuesta": "Calcula tu monto exacto aquí 👉 {link}",
+        "gancho": "una compra cotidiana concreta (qué y cuánto en dólares)",
         "datos": "tasas",
     },
     {
@@ -123,7 +126,7 @@ TEMAS = [
             "supermercado (harina, arroz, huevos, aceite…) para ver dónde sale más barato y armar "
             "tu lista de compras. Deja claro que todavía no está terminada y que la estás armando "
             "poco a poco. NO menciones precios de productos, supermercados concretos ni funciones "
-            "detalladas (las tasas del momento sí). Cierra pidiendo algo concreto: qué productos "
+            "detalladas. Cierra pidiendo algo concreto: qué productos "
             "les gustaría poder comparar o qué les ayudaría más al hacer el mercado."
         ),
         "link": f"{SITE}/mercado",
@@ -131,6 +134,7 @@ TEMAS = [
         "espacio": 6,
         "vistas": ["mercado", "mercado_lista"],
         "respuesta": "Así va quedando, todavía en construcción 👉 {link}",
+        "gancho": "confesión del creador sobre lo que está construyendo",
         "datos": "ninguno",
     },
     {
@@ -178,6 +182,7 @@ TEMAS = [
         "espacio": 6,
         "vistas": ["calculadora", "cot_resumen"],
         "respuesta": "Pruébala tú mismo 👉 {link}",
+        "gancho": "empatía con el problema que resuelve esa parte de la app",
         "datos": "tasas",
     },
     {
@@ -198,6 +203,7 @@ TEMAS = [
         "imagenes": 2,
         "vistas": ["app_inicio_gestion", "app_nuevo_movimiento"],
         "respuesta": "Crea tu cuenta gratis y empieza a llevar tus cuentas 👉 {link}",
+        "gancho": "empatía con no saber en qué se fue la plata del mes",
         "datos": "ninguno",
     },
     {
@@ -218,6 +224,7 @@ TEMAS = [
                    "grafica_brecha", "mercado"],
         "videos": ["video_noticias"],
         "respuesta": "Aquí está todo lo nuevo 👉 {link}",
+        "gancho": "confesión o desahogo del creador, corto (como 'Hastiado de tasas ajenas')",
         "datos": "noticias",
     },
     {
@@ -234,6 +241,7 @@ TEMAS = [
         "vistas": ["calculadora", "cot_euro", "cot_resumen", "cot_binance"],
         "videos": ["video_cotizaciones"],
         "respuesta": "Para la próxima, la calculadora 👉 {link}",
+        "gancho": "escena en primera persona, en un lugar concreto (sin cifras en la primera línea)",
         "datos": "tasas",
     },
     {
@@ -251,6 +259,7 @@ TEMAS = [
         "vistas": ["cot_brecha", "grafica_brecha", "grafica_binance"],
         "videos": ["video_brecha", "video_binance"],
         "respuesta": "La brecha actualizada aquí 👉 {link}",
+        "gancho": "plata concreta que duele (la brecha en bolívares o contra el año)",
         "datos": "tasas",
     },
     {
@@ -265,6 +274,7 @@ TEMAS = [
         "vistas": ["calculadora", "cot_resumen", "grafica_dolar", "grafica_euro", "cot_euro"],
         "videos": ["video_dolar", "video_euro", "video_cotizaciones"],
         "respuesta": "Aquí la tienes 👉 {link}",
+        "gancho": "'Truco: …' con algo que se puede hacer hoy",
         "datos": "tasas",
     },
     {
@@ -272,11 +282,13 @@ TEMAS = [
         "id": "economia_mundial",
         "angulo": (
             "Formato ECONOMÍA MUNDIAL. Eres un medio informativo además de una app: cuenta la "
-            "noticia económica de hoy que viene en los datos. Primera línea: qué pasó, dicho claro y "
-            "con gancho (sin titular de periódico copiado). Luego, en 1 o 2 líneas, por qué le "
-            "importa a alguien en Venezuela que cobra y gasta en bolívares, dólares o USDT (precio "
-            "del petróleo, fuerza del dólar, inflación, remesas, cripto…), con prudencia: 'puede', "
-            "'suele', nunca predicciones seguras. Menciona el medio de donde viene ('según "
+            "noticia económica de hoy que viene en los datos. Primera línea: lo que la noticia "
+            "puede tocar en el bolsillo de alguien en Venezuela, o el hecho más llamativo dicho "
+            "como se lo contarías a un amigo; nunca un titular de agencia ('X, según Y'). Luego "
+            "qué pasó y, en una línea concreta, por qué le importa a quien cobra y gasta en "
+            "bolívares, dólares o USDT (precio del petróleo, fuerza del dólar, inflación, remesas, "
+            "cripto…), con prudencia: 'puede', 'suele', nunca predicciones seguras. Nada de "
+            "frases genéricas como 'eso influye en la economía'. Menciona el medio de donde viene ('según "
             "Investing.com') pegado al hecho, nunca a tu explicación: lo que significa para "
             "Venezuela es tu opinión, no la del medio. Usa SOLO los hechos y cifras del titular y el resumen (a veces solo "
             "hay titular): no agregues datos, nombres, causas ni cifras que no estén ahí. Los "
@@ -293,6 +305,8 @@ TEMAS = [
         "vistas": ["cot_resumen", "grafica_dolar", "grafica_binance", "grafica_euro"],
         # Sin respuesta: la app se menciona en el propio post (en los comentarios llegaba a menos gente).
         "respuesta": None,
+        "gancho": ("el hecho de la noticia contado como a un amigo, que ya diga qué pasó (sin "
+                   "'según'); nada de frases genéricas tipo 'un conflicto puede encarecerlo todo'"),
         "menciona_app": True,
         # Tema de Threads más visitado para noticias económicas que el de las tasas.
         "tag": "Investing",
@@ -442,18 +456,29 @@ Cómo escribir:
   Alguna expresión venezolana con moderación (de pana, echarle un ojo, real), sin forzarla.
 - Nada de tono de noticiero ni de ficha técnica: aunque des cifras, que suene a alguien
   hablando ("fíjate que…", "lo que yo haría es…", "ojo con esto"), sin abusar de esas muletillas.
-- La PRIMERA LÍNEA lo es todo: corta (máx. ~70 caracteres), que se entienda sola y genere
-  curiosidad, sorpresa o identificación. Puede ser una cifra, una afirmación rotunda, una escena
-  o una opinión. Luego un salto de línea.
-- Entre 150 y 360 caracteres en total. Nunca más de 460. Párrafos de 1-2 líneas.
+- La PRIMERA LÍNEA lo es todo: corta (máx. ~70 caracteres), que se entienda sola y suene al
+  inicio de una conversación real, no a un titular. En Threads funcionan mejor estos ganchos:
+  · Escena en primera persona: "Fui a pagar un repuesto y me querían cobrar a tasa euro."
+  · Plata concreta que duele: "Son 12.869 bolívares de diferencia por cada 100 $."
+  · Confesión o desahogo del creador: "Hastiado de tasas ajenas."
+  · Empatía con un dolor real: "Cobras el 15 y para el 20 ya no sabes en qué se te fue."
+  · Antes/después o una afirmación que rompe lo que la gente cree, si los datos la sostienen.
+  Pásala por tres pruebas: ¿se puede imaginar (una escena, un objeto, una cifra)?, ¿es
+  concreta y verificable?, ¿la podría escribir cualquier otra cuenta? Si la respuesta a la
+  tercera es sí, cámbiala. Luego un salto de línea.
+- Corto gana: entre 120 y 280 caracteres de texto. Párrafos de 1-2 líneas.
 - 0 o 1 emoji, solo si suma.
 - Sigue el formato que se te indica; cada formato tiene una estructura distinta.
-- Cada post nombra las tres tasas de ese momento (dólar BCV, euro BCV y USDT en Binance P2P)
-  con sus cifras exactas. Nunca en la primera línea. Varía cómo las presentas: dentro de la
-  escena, comparándolas, ordenadas de menor a mayor, o en una línea corta propia con · entre
-  ellas. No arranques esa parte siempre igual ("Ahorita con el dólar BCV en…" ya está gastado).
+- Las tres tasas del momento (BCV, euro y USDT) las agrega el sistema en una línea fija al
+  final: no las escribas tú. En tu texto usa como mucho UNA o DOS cifras, las que cuentan la
+  historia (una diferencia en bolívares, lo que cuesta algo hoy).
 - Frases nuevas en cada post: no reutilices ganchos, giros ni preguntas de cierre de los
   últimos posts. Busca otra imagen, otro ejemplo de la calle, otro verbo.
+- La pregunta de cierre tiene que poder responderse en dos segundos: elegir entre dos
+  opciones ("¿tú pagas en bolívares o en USDT?") o contar algo concreto que le pasó ("¿a qué
+  tasa te cobraron la última vez?"). Nada de "¿cómo ajustas tu presupuesto?".
+- Suena a persona, no a IA: nada de "no es X, es Y", listas de tres adjetivos, "cada detalle
+  cuenta", "en este contexto", "el panorama", ni frases que terminan en coma tras coma.
 
 Prohibido (hace que todos los posts suenen iguales y la gente los ignora):
 - Saludos al inicio ("Buenas tardes", "Buenos días", "Hola", "por aquí").
@@ -502,6 +527,14 @@ FRASES_PROHIBIDAS = [
     r"(mercado|d[oó]lar)\s+negro",
     # Primera línea de ficha ("Dólar BCV en 888,12 Bs y euro…"): no detiene a nadie.
     r"\A\W*(el\s+)?(d[oó]lar\s+)?bcv\s+(en|a|hoy)\b",
+    # Arranques de informe que se repitieron varios días seguidos y dejaron de tener vistas.
+    r"\A[^\n]*amaneci",
+    r"arrancamos (el d[ií]a|la jornada|la semana)",
+    r"\A[^\n]*,\s+seg[uú]n\s",
+    # Muletillas de texto hecho con IA (ver la skill antislop-copywriting).
+    r"cada detalle cuenta",
+    r"el panorama",
+    r"en este contexto",
 ]
 
 # El argumento "cobras a BCV y te cobran a tasa euro" cansa si sale seguido: solo si no apareció
@@ -822,9 +855,9 @@ def fetch_commodities() -> list[dict]:
 
 
 def data_block(materias: list[dict], rates: str | None) -> str:
-    """Bloque fijo de cifras al final del post de economía mundial: petróleo, metales (con su
-    variación en 24 h) y las tasas del momento. Lo arma Python para que las cifras sean exactas
-    y el texto de la IA quepa en el límite de Threads."""
+    """Bloque fijo de cifras al final de cada post: las tasas del momento y, en economía mundial,
+    el petróleo y los metales (con su variación en 24 h). Lo arma Python para que las cifras
+    sean exactas y el texto de la IA quede corto."""
     def item(m: dict, nombre: bool = True) -> str:
         pct = m["pct"]
         flecha = "" if pct is None else " =" if abs(pct) < 0.05 else \
@@ -1162,6 +1195,7 @@ def rate_calcs(real_data: str | None) -> str | None:
                 f"Respecto a ayer ({fmt_bs(ayer)} Bs): {verbo} {fmt_bs(abs(diff))} Bs "
                 f"({fmt_bs(abs(diff) / ayer * 100)}%)"
             )
+            lines.append(f"Por cada 100 $: {fmt_bs(abs(diff) * 100)} Bs {'más' if diff > 0 else 'menos'} que ayer")
     if eur:
         line = f"Euro BCV hoy: {fmt_bs(eur)} Bs"
         if eur_ayer and abs(eur - eur_ayer) >= 0.005:
@@ -1227,24 +1261,49 @@ def recent_euro_angle(history: list) -> bool:
     return any(re.search(EURO_ANGULO, h.get("texto") or "", re.IGNORECASE) for h in history[-3:])
 
 
+def pick_hook(user_msg: str, preferido: str | None) -> str | None:
+    """Pide 5 primeras líneas con ganchos distintos (escena, plata concreta, confesión, empatía,
+    afirmación) y que la IA elija la que más detendría a alguien que pasa el dedo por Threads.
+    Las que tienen muletillas prohibidas se descartan. None si falla: el post se escribe igual."""
+    try:
+        resp = ask_gemini(SYSTEM_PROMPT, user_msg + (
+            "\n\nTodavía NO escribas el post. Propón 5 primeras líneas para él, cada una con un "
+            "gancho distinto (escena en primera persona, plata concreta, confesión, empatía con "
+            "un dolor, afirmación que rompe lo esperado), máx. 70 caracteres, una por línea y sin "
+            "numerar. Después escribe una última línea así: ELEGIDA: <la que más haría detenerse "
+            "a alguien que pasa rápido por Threads, copiada tal cual>."
+            + (f" Para este formato elige un gancho de este tipo: {preferido}." if preferido else "")))
+    except Exception as e:  # noqa: BLE001
+        log(f"Aviso: no se pudieron generar ganchos ({e}).")
+        return None
+    lineas = [l.strip(" -•*\"") for l in resp.splitlines() if l.strip()]
+    elegida = next((l.split(":", 1)[1].strip(" \"") for l in lineas if l.upper().startswith("ELEGIDA")), "")
+    candidatas = [l for l in lineas if not l.upper().startswith("ELEGIDA")]
+    log("Ganchos propuestos:\n" + "\n".join(f"  {c}" for c in candidatas) + f"\n  → {elegida}")
+    for c in [elegida, *candidatas]:
+        if c and len(c) <= 90 and not post_problems(c):
+            return c
+    return None
+
+
 def generate_post(
     topic: dict, history: list, real_data: str | None, shots: list[dict], guion: str | None = None,
     rates: str | None = None, pie: str = "",
 ) -> str:
     """real_data son los datos del tema (tasas, novedades o noticia); rates, el texto de
-    /cotizaciones, porque todos los posts nombran las tasas del momento. pie es un bloque fijo de
-    cifras que se agrega al final (economía mundial); entonces la IA no copia cifras."""
+    /cotizaciones, para los cálculos. pie es el bloque fijo de cifras que se agrega al final
+    (ver data_block); la IA no copia esas cifras."""
     textos = [h["texto"].strip() for h in history if h.get("texto")]
     # Solo las primeras líneas: si la IA ve los posts completos tiende a copiar su estructura.
     ganchos = "\n".join(f"- {t.splitlines()[0][:90]}" for t in textos[-12:]) or "(ninguno todavía)"
-    cierres = "\n".join(f"- {t.splitlines()[-1][:120]}" for t in textos[-8:] if t.endswith("?"))
+    # La última pregunta de cada post (después puede venir el bloque de cifras).
+    cierres = "\n".join(f"- {p[-1][:120]}" for t in textos[-8:]
+                        if (p := [l for l in t.splitlines() if l.rstrip().endswith("?")]))
     hoy = dt.datetime.now(TZ_VE).strftime("%A %d/%m/%Y, %I:%M %p")
     calcs = rate_calcs(rates)
-    # Cifras que el post tiene que nombrar tal cual: dólar BCV, euro BCV y USDT.
-    exigidas = [] if pie else [
-        fmt_bs(v) for k, v in parse_rates(rates).items() if k in ("bcv", "eur", "p2p") and v]
-    # Con pie, el texto de la IA le deja espacio dentro del límite de Threads (500, con margen).
-    max_texto = 495 - len(pie) - 2 if pie else 460
+    # Los posts cortos son los que más vistas tienen; con el bloque, todo cabe en los 500 de Threads.
+    # Economía mundial necesita algo más (noticia, fuente y Cotizados): lo que deje su bloque largo.
+    max_texto = 495 - len(pie) - 2 if topic.get("menciona_app") else min(320, 495 - len(pie) - 2)
     sin_euro = recent_euro_angle(history)
     if guion:
         medios = f"El post lleva un video corto de la app: {GUIONES[guion]['desc']} (no lo describas).\n\n"
@@ -1264,14 +1323,12 @@ def generate_post(
     )
     if cierres:
         user_msg += f"\n\nPreguntas de cierre ya usadas (no las repitas ni con otras palabras):\n{cierres}"
-    if exigidas:
-        user_msg += f"\n\nNombra en el post estas tres cifras tal cual: {', '.join(exigidas)} Bs."
     if pie:
         user_msg += (
             f"\n\nAl final del post el sistema agrega este bloque de cifras:\n{pie}\n"
             "No escribas tú ninguna de esas cifras (ni tasas, ni precios, ni porcentajes): puedes "
-            "decir si el petróleo o el oro suben o bajan, coherente con el bloque. Tu texto, sin "
-            f"el bloque, en máximo {max_texto} caracteres, y la pregunta de cierre al final de tu texto."
+            "decir si algo sube o baja, coherente con el bloque. Tu texto, sin el bloque, en "
+            f"máximo {max_texto} caracteres, y la pregunta de cierre al final de tu texto."
         )
     if sin_euro:
         user_msg += ("\n\nEl argumento de cobrar a dólar BCV y pagar a tasa euro ya salió en los "
@@ -1290,6 +1347,10 @@ def generate_post(
             f"conectar (tono, gancho, largo), pero no copies sus frases:\n{mejores}"
         )
 
+    hook = pick_hook(user_msg, topic.get("gancho"))
+    if hook:
+        user_msg += f"\n\nEmpieza el post con esta primera línea (puedes pulirla sin cambiar la idea):\n{hook}"
+
     text = ""
     for intento in range(3):
         text = ask_gemini(SYSTEM_PROMPT, user_msg).strip().strip('"')
@@ -1297,9 +1358,6 @@ def generate_post(
         text = re.sub(r"[ \t]*https?://\S+", "", text)
         text = re.sub(r"[ \t]*#\w+", "", text).strip()
         problems = post_problems(text, max_texto)
-        faltan = [c for c in exigidas if c not in text]
-        if faltan:
-            problems.append(f"faltan estas cifras, copiadas tal cual: {', '.join(faltan)}")
         repetidas = [c for c in re.findall(r"\d[\d.]*,\d+", pie) if c in text]
         if repetidas:
             problems.append(f"repite cifras del bloque ({', '.join(repetidas)}): van solo en el bloque")
@@ -1316,10 +1374,15 @@ def generate_post(
         user_msg += (
             f"\n\nTu versión anterior no sirve por: {'; '.join(problems)}. "
             "Escribe otra distinta que cumpla todas las reglas."
+            + (" Para acortar, quita frases enteras: deja una idea por párrafo."
+               if any(p.startswith("demasiado largo") for p in problems) else "")
         )
 
     # Los términos prohibidos en Venezuela no salen nunca, aunque la IA insista.
     text = re.sub(r"(?i)\b(el\s+)?(d[oó]lar\s+|mercado\s+)?(paralelo|negro)\b", "el USDT", text)
+    # Si aun así no cabe, mejor sin la línea de metales que sin post.
+    if len(text) + len(pie) + 2 > THREADS_MAX_CHARS:
+        pie = "\n".join(l for l in pie.splitlines() if not l.startswith("🪙"))
     if pie:
         text = f"{text}\n\n{pie}"
     if len(text) <= THREADS_MAX_CHARS:
@@ -1454,8 +1517,8 @@ def main() -> int:
     # mejoras de la app, la noticia económica del día o nada más.
     rates = fetch_real_data()
     materias = fetch_commodities() if topic["datos"] == "economia" else []
-    # En economía mundial las cifras (petróleo, metales y tasas) van en un bloque fijo al final.
-    pie = data_block(materias, rates) if topic["datos"] == "economia" else ""
+    # Las tasas (y en economía mundial el petróleo y los metales) van en un bloque fijo al final.
+    pie = data_block(materias, rates)
     data = {
         "noticias": fetch_news,
         "tasas": lambda: rates,
