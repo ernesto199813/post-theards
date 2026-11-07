@@ -1357,7 +1357,8 @@
       "quotes": 0,
       "shares": 0
     },
-    "stats_fecha": "2026-11-07T08:47-04:00"
+    "stats_fecha": "2026-11-07T08:47-04:00",
+    "respondidos": []
   },
   {
     "fecha": "2026-11-04T16:57-04:00",
@@ -1383,7 +1384,8 @@
       "quotes": 0,
       "shares": 0
     },
-    "stats_fecha": "2026-11-07T08:47-04:00"
+    "stats_fecha": "2026-11-07T08:47-04:00",
+    "respondidos": []
   },
   {
     "fecha": "2026-11-04T21:31-04:00",
@@ -1411,7 +1413,8 @@
       "quotes": 0,
       "shares": 0
     },
-    "stats_fecha": "2026-11-07T08:47-04:00"
+    "stats_fecha": "2026-11-07T08:47-04:00",
+    "respondidos": []
   },
   {
     "fecha": "2026-11-05T08:48-04:00",
@@ -1439,7 +1442,8 @@
       "quotes": 0,
       "shares": 0
     },
-    "stats_fecha": "2026-11-07T08:47-04:00"
+    "stats_fecha": "2026-11-07T08:47-04:00",
+    "respondidos": []
   },
   {
     "fecha": "2026-11-05T13:19-04:00",
@@ -1465,7 +1469,8 @@
       "quotes": 0,
       "shares": 0
     },
-    "stats_fecha": "2026-11-07T08:47-04:00"
+    "stats_fecha": "2026-11-07T08:47-04:00",
+    "respondidos": []
   },
   {
     "fecha": "2026-11-05T19:49-04:00",
@@ -1495,7 +1500,8 @@
       "quotes": 0,
       "shares": 0
     },
-    "stats_fecha": "2026-11-07T08:47-04:00"
+    "stats_fecha": "2026-11-07T08:47-04:00",
+    "respondidos": []
   },
   {
     "fecha": "2026-11-06T08:48-04:00",
@@ -1523,7 +1529,8 @@
       "quotes": 0,
       "shares": 0
     },
-    "stats_fecha": "2026-11-07T08:47-04:00"
+    "stats_fecha": "2026-11-07T08:47-04:00",
+    "respondidos": []
   },
   {
     "fecha": "2026-11-06T19:07-04:00",
@@ -1549,7 +1556,8 @@
       "quotes": 0,
       "shares": 0
     },
-    "stats_fecha": "2026-11-07T08:47-04:00"
+    "stats_fecha": "2026-11-07T08:47-04:00",
+    "respondidos": []
   },
   {
     "fecha": "2026-11-06T22:48-04:00",
@@ -1577,7 +1585,10 @@
       "quotes": 0,
       "shares": 0
     },
-    "stats_fecha": "2026-11-07T08:47-04:00"
+    "stats_fecha": "2026-11-07T08:47-04:00",
+    "respondidos": [
+      "17904143973608052"
+    ]
   },
   {
     "fecha": "2026-11-07T08:48-04:00",
@@ -1594,6 +1605,7 @@
     "estilo": "light",
     "idea": null,
     "noticia_url": null,
-    "texto": "Ando armando la sección Mercado en la app para comparar harina, arroz y otros básicos.\n\nTodavía está en construcción y la voy montando con calma, con el dólar BCV en 897,54 Bs, el euro BCV en 1.001,19 Bs y el USDT de Binance P2P a 1.026,73 Bs.\n\n¿Qué productos te gustaría poder comparar para armar tu lista?"
+    "texto": "Ando armando la sección Mercado en la app para comparar harina, arroz y otros básicos.\n\nTodavía está en construcción y la voy montando con calma, con el dólar BCV en 897,54 Bs, el euro BCV en 1.001,19 Bs y el USDT de Binance P2P a 1.026,73 Bs.\n\n¿Qué productos te gustaría poder comparar para armar tu lista?",
+    "respondidos": []
   }
 ]

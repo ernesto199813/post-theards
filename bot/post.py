@@ -1454,6 +1454,56 @@ def publish_to_threads(
     return result["id"]
 
 
+# Comentarios que preguntan por la app ("¿cómo se llama la app?", "¿con qué app ves eso?", "pasa
+# el link"): el bot les responde en nombre de la cuenta. El resto de comentarios no los toca.
+PREGUNTA_APP = re.compile(
+    r"c[oó]mo se llama|link|enlace|d[oó]nde (la |lo )?(descargo|consigo|bajo|encuentro|veo|ves|sacas)"
+    r"|(qu[eé]|cu[aá]l|con qu[eé]|nombre de la|pasa la|p[aá]same la) (es la )?(app|aplicaci[oó]n|p[aá]gina|web)",
+    re.IGNORECASE,
+)
+RESPUESTAS_APP = [
+    "Se llama Cotizados 🙌 Tienes el link en mi perfil, o la consigues en la Play Store buscando Cotizados.",
+    "¡Es Cotizados! La hice yo. El link está en mi perfil, y también la encuentras en la Play Store como Cotizados.",
+    "Cotizados 👌 Entra por el link de mi perfil o búscala en la Play Store con ese nombre.",
+    "Se llama Cotizados y es gratis. El link lo tienes en mi perfil, o en la Play Store la consigues como Cotizados.",
+]
+
+
+def answer_app_questions(history: list, token: str) -> None:
+    """Responde los comentarios de los posts de los últimos 3 días que preguntan por la app. Los
+    ya respondidos se guardan en el post ("respondidos") para no contestar dos veces."""
+    try:
+        yo = threads_request("GET", "/me", token, fields="username")["username"]
+    except Exception as e:  # noqa: BLE001
+        log(f"Aviso: no se pudieron revisar los comentarios ({e}).")
+        return
+    respondidas = 0
+    for h in history:
+        if not h.get("post_id") or post_age_hours(h) > 72:
+            continue
+        try:
+            comentarios = threads_request("GET", f"/{h['post_id']}/replies", token,
+                                          fields="id,text,username").get("data", [])
+        except Exception as e:  # noqa: BLE001
+            log(f"Aviso: no se pudieron leer los comentarios de {h['post_id']} ({e}).")
+            continue
+        hechos = h.setdefault("respondidos", [])
+        for c in comentarios:
+            if c.get("username") == yo or c["id"] in hechos or not PREGUNTA_APP.search(c.get("text") or ""):
+                continue
+            texto = random.choice(RESPUESTAS_APP)
+            try:
+                publish_to_threads(texto, token, reply_to_id=c["id"])
+                hechos.append(c["id"])
+                respondidas += 1
+                log(f"Respondido a @{c.get('username')} ({c.get('text')!r}): {texto}")
+            except Exception as e:  # noqa: BLE001
+                log(f"Aviso: no se pudo responder a @{c.get('username')} ({e}).")
+    if respondidas:
+        # Se guarda ya, por si el post de esta corrida falla: así no se responde dos veces.
+        save_history(history)
+
+
 def maybe_refresh_token(token: str, first_post_today: bool) -> None:
     """Renueva el token de larga duración (válido 60 días) una vez por semana, en el primer
     post del lunes. El nuevo token se deja en $RUNNER_TEMP/new_token para que el workflow lo
@@ -1493,6 +1543,8 @@ def main() -> int:
     history = load_history()
     if token:
         update_stats(history, token)
+        if not DRY_RUN:
+            answer_app_questions(history, token)
     log(f"Rendimiento por formato (posts con más de 24 h):\n{stats_report(history)}")
     topic = pick_topic(history)
     noticia = None
@@ -1618,5 +1670,16 @@ def print_stats() -> int:
     return 0
 
 
+def answer_only() -> int:
+    """python bot/post.py --responder: solo responde los comentarios que preguntan por la app."""
+    token = os.getenv("THREADS_ACCESS_TOKEN", "").strip()
+    if not token:
+        log("Falta THREADS_ACCESS_TOKEN.")
+        return 1
+    answer_app_questions(load_history(), token)
+    return 0
+
+
 if __name__ == "__main__":
-    sys.exit(print_stats() if "--stats" in sys.argv else main())
+    sys.exit(print_stats() if "--stats" in sys.argv
+             else answer_only() if "--responder" in sys.argv else main())

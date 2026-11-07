@@ -71,6 +71,12 @@ entre los dos comentarios).
   visitado que el de las tasas), sin respuesta ni enlaces: la IA cierra mencionando Cotizados en
   el propio texto, porque el enlace en los comentarios llegaba a menos gente. Si no hay noticia,
   sale otro formato.
+- **Respuestas a quien pregunta por la app:** en cada corrida el bot lee los comentarios de los
+  posts de los últimos 3 días. A los que preguntan por la app ("¿cómo se llama la app?", "¿con
+  qué app ves eso?", "pasa el link") les responde que se llama Cotizados, que el link está en el
+  perfil o que la consiguen en la Play Store (`PREGUNTA_APP` y `RESPUESTAS_APP` en
+  `bot/post.py`). Los demás comentarios no los toca. Para responder sin publicar un post:
+  `python bot/post.py --responder`.
 - **Tasas en todos los posts:** cada post termina con una línea fija armada en Python con el
   dólar BCV, el euro BCV y el USDT de Binance P2P de ese momento. Así el texto de la IA queda
   corto (máx. 320 caracteres, los posts cortos son los que más vistas tienen) y usa como mucho
