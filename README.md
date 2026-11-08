@@ -162,6 +162,10 @@ python bot/post.py
   gente preguntaba por la app; los del bot con capturas genéricas rindieron menos que los de solo
   texto. Por eso el bot publica solo texto y no responde su propio post con el enlace. Para
   volver atrás: `USAR_IMAGENES = True` o `LINK_EN_RESPUESTA = True` en `bot/post.py`.
+  Excepción: "detrás de cámaras" (novedades) y "cómo funciona" (recorrido) llevan capturas de la
+  app tomadas en vivo (`"con_imagen"` en `TEMAS`), así siempre muestran la versión actual: Noticias,
+  Binance 24 horas, la gráfica de la brecha y la calculadora. Las capturas fijas de `public/app/`
+  (pantallas con sesión iniciada) son del 27/10/2026 y quedaron fuera hasta reemplazarlas.
 - **Imágenes del post (apagadas):** cada tema tiene varias vistas posibles de la web (tarjetas y resumen de
   `/cotizaciones`, gráficas anuales del dólar, euro, Binance y la brecha con distintos rangos,
   la calculadora, `/noticias` y `/mercado`; ver `VISTAS` y `"vistas"` en `TEMAS`). El bot prioriza

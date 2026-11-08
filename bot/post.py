@@ -153,17 +153,21 @@ TEMAS = [
             {"idea": "la Calculadora: escribes un monto y lo ves al instante en bolívares, dólares "
                      "BCV, USDT, euros y pesos colombianos; puedes añadir más tasas", "vistas": ["calculadora"]},
             {"idea": "la Tasa Libre de la calculadora: calcular con tu propia tasa, la que de verdad "
-                     "te dieron, sin depender del BCV ni de Binance", "vistas": ["app_tasa_libre"]},
+                     "te dieron, sin depender del BCV ni de Binance", "vistas": ["calculadora"]},
+            {"idea": "Binance 24 horas (botón '24 horas' en la tarjeta de Binance): el precio del "
+                     "USDT para vender y para comprar revisado cada 20 minutos, con lo más alto y lo "
+                     "más bajo del día y a qué hora fue, para elegir mejor cuándo cambiar",
+             "vistas": ["binance_24h"]},
             {"idea": "la tarjeta de Brecha en Cotizaciones: cuánto se separan el BCV y el Binance "
                      "P2P en porcentaje y en bolívares", "vistas": ["cot_brecha", "cot_resumen"],
              "videos": ["video_cotizaciones"]},
             {"idea": "la gráfica anual de la Brecha (botón 'Ver gráfica anual' en Cotizaciones): ves "
                      "lo volátil que ha estado la brecha en lo que va de año, con la actual, el "
                      "promedio, la máxima y la mínima, por 1 mes, 3 meses, 6 meses o 1 año",
-             "vistas": ["grafica_brecha", "app_brecha_anual"], "videos": ["video_brecha"]},
+             "vistas": ["grafica_brecha"], "videos": ["video_brecha"]},
             {"idea": "la vista de Inicio cuando inicias sesión: ahí llevas tus ingresos y gastos "
                      "del mes y ves tu balance (gratis, solo necesitas crear tu cuenta)",
-             "vistas": ["app_inicio_gestion", "app_nuevo_movimiento"], "imagenes": 2},
+             "vistas": []},
             {"idea": "las tarjetas del dólar y el euro BCV en Cotizaciones: la tasa de hoy, la de "
                      "ayer y cuánto cambió", "vistas": ["cot_dolar", "cot_euro", "cot_resumen"],
              "videos": ["video_dolar", "video_euro", "video_cotizaciones"]},
@@ -182,6 +186,7 @@ TEMAS = [
         "link": SITE,
         "espacio": 6,
         "vistas": ["calculadora", "cot_resumen"],
+        "con_imagen": True,
         "respuesta": "Pruébala tú mismo 👉 {link}",
         "gancho": "empatía con el problema que resuelve esa parte de la app",
         "datos": "tasas",
@@ -201,8 +206,8 @@ TEMAS = [
         ),
         "link": SITE,
         "espacio": 4,
-        "imagenes": 2,
-        "vistas": ["app_inicio_gestion", "app_nuevo_movimiento"],
+        # Sin imagen hasta tener capturas nuevas de Gestión (se rediseñó el 7/11/2026).
+        "vistas": [],
         "respuesta": "Crea tu cuenta gratis y empieza a llevar tus cuentas 👉 {link}",
         "gancho": "empatía con no saber en qué se fue la plata del mes",
         "datos": "ninguno",
@@ -219,10 +224,10 @@ TEMAS = [
         # Es el formato que más vistas trae, pero las novedades cambian poco: como mucho una vez
         # cada 4 posts para no repetirlas.
         "espacio": 4,
-        # Carrusel de 3, como el post manual que más vistas tuvo.
-        "imagenes": 3,
-        "vistas": ["noticias", "app_tasa_libre", "app_inicio_gestion", "cot_resumen", "grafica_dolar",
-                   "grafica_brecha", "mercado"],
+        # Carrusel de 2 con pantallas de la app capturadas en vivo (siempre la versión actual).
+        "imagenes": 2,
+        "vistas": ["noticias", "binance_24h", "grafica_brecha", "calculadora"],
+        "con_imagen": True,
         "videos": ["video_noticias"],
         "respuesta": "Aquí está todo lo nuevo 👉 {link}",
         "gancho": "confesión o desahogo del creador, corto (como 'Hastiado de tasas ajenas')",
@@ -322,7 +327,10 @@ TEMAS = [
 #              posibles de la gráfica (se elige uno al azar).
 #   "clic":    texto que se pulsa antes de capturar.
 #   "pais":    la página elige el país por ubicación; se fuerza Venezuela en el selector.
+#   "dialogo": texto que abre un panel; se recorta del borde del panel hasta "hasta_dialogo".
 #   "archivo": captura fija guardada en el repo, para pantallas que necesitan iniciar sesión.
+#              Las de public/app/ son del 27/10/2026 y la app cambió después: no están en ningún
+#              tema hasta que haya capturas nuevas.
 RANGOS = {"1M": "el último mes", "3M": "los últimos 3 meses", "6M": "los últimos 6 meses", "1A": "el último año"}
 VISTAS = {
     "cot_brecha": {"path": "/cotizaciones", "tarjeta": 0, "desc": "la brecha cambiaria entre el BCV y Binance P2P"},
@@ -340,6 +348,9 @@ VISTAS = {
                      "desc": "la gráfica del euro BCV en {rango}"},
     "grafica_binance": {"path": "/cotizaciones", "grafica": 3, "rangos": ["1M", "3M", "6M", "1A"],
                         "desc": "la gráfica del USDT en Binance P2P en {rango}"},
+    "binance_24h": {"path": "/cotizaciones", "dialogo": "24 horas", "hasta_dialogo": "Vender (lo que recibes)",
+                    "desc": "Binance 24 horas: el precio del USDT para vender y comprar en las últimas 24 "
+                            "horas, revisado cada 20 minutos, con lo más alto y lo más bajo del día"},
     # Mercado no está terminado: se recorta antes de la lista de productos para no mostrar precios.
     "mercado": {"path": "/mercado", "pais": "VE", "alto": 440, "desc": "la sección Mercado (en construcción)"},
     "mercado_lista": {"path": "/mercado", "pais": "VE", "clic": "Armar mi lista", "alto": 600,
@@ -361,6 +372,8 @@ USAR_VIDEOS = False
 # comentarios; los del bot con capturas genéricas rindieron menos que los de solo texto. Así que
 # el bot publica solo texto y sin respuesta con enlace: quien pregunta por la app recibe la
 # respuesta de answer_app_questions. Con True vuelven las capturas o la respuesta con el enlace.
+# Excepción: los temas con "con_imagen" (novedades y recorrido) muestran la app actual con
+# capturas en vivo.
 USAR_IMAGENES = False
 LINK_EN_RESPUESTA = False
 
@@ -909,7 +922,7 @@ def plan_images(topic: dict, history: list) -> tuple[list[dict], str]:
     tiempo. Cada imagen es {"vista", "rango"} (el rango solo en gráficas). El modo (claro u
     oscuro) se alterna con el del post anterior, para que la misma vista no se vea igual."""
     estilo = "light" if (history[-1].get("estilo") if history else "dark") == "dark" else "dark"
-    if not topic["vistas"] or not USAR_IMAGENES:
+    if not topic["vistas"] or not (USAR_IMAGENES or topic.get("con_imagen")):
         return [], estilo
 
     def last_use(v: str) -> int:
@@ -981,6 +994,20 @@ def capture_shot(page, shot: dict) -> dict:
         # La primera tarjeta (y el resumen) incluyen el aviso "Actualizado: ..." de arriba.
         top = 0 if i == 0 or "hasta_tarjeta" in view else max(0, box["top"] - 16)
         return {"x": 0, "y": top, "width": 430, "height": box["bottom"] + 20 - top}
+    if "dialogo" in view:
+        page.get_by_text(view["dialogo"], exact=True).first.click()
+        page.wait_for_selector("[role=dialog]", timeout=10000)
+        page.wait_for_timeout(2500)
+        box = page.evaluate(
+            """(t) => {
+                const d = document.querySelector('[role=dialog]');
+                const n = [...d.querySelectorAll('*')].filter(e => (e.innerText || '').trim() === t).pop();
+                const r = d.getBoundingClientRect();
+                return {top: r.top, bottom: n ? n.getBoundingClientRect().bottom + 24 : r.bottom};
+            }""",
+            view["hasta_dialogo"],
+        )
+        return {"x": 0, "y": box["top"], "width": 430, "height": box["bottom"] - box["top"]}
     if "grafica" in view:
         page.get_by_text("Ver gráfica anual").nth(view["grafica"]).click()
         page.wait_for_selector("[role=dialog]", timeout=10000)
