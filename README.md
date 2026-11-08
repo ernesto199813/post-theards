@@ -71,12 +71,13 @@ entre los dos comentarios).
   visitado que el de las tasas), sin respuesta ni enlaces: la IA cierra mencionando Cotizados en
   el propio texto, porque el enlace en los comentarios llegaba a menos gente. Si no hay noticia,
   sale otro formato.
-- **Respuestas a quien pregunta por la app:** en cada corrida el bot lee los comentarios de los
-  posts de los últimos 3 días. A los que preguntan por la app ("¿cómo se llama la app?", "¿con
-  qué app ves eso?", "pasa el link") les responde que se llama Cotizados, que el link está en el
-  perfil o que la consiguen en la Play Store (`PREGUNTA_APP` y `RESPUESTAS_APP` en
-  `bot/post.py`). Los demás comentarios no los toca. Para responder sin publicar un post:
-  `python bot/post.py --responder`.
+- **Respuestas a quien pregunta por la app:** en cada corrida el bot lee los comentarios de
+  todos los posts de la cuenta de los últimos 7 días, también los publicados a mano. A los que
+  preguntan por la app ("¿cómo se llama la app?", "¿con qué app ves eso?", "pasa el link") les
+  responde que se llama Cotizados, que el link está en el perfil o que la consiguen en la Play
+  Store (`PREGUNTA_APP` y `RESPUESTAS_APP` en `bot/post.py`). Si el dueño ya les contestó a
+  mano, no repite. Los respondidos se guardan en `data/respondidos.json`. Los demás comentarios
+  no los toca. Para responder sin publicar un post: `python bot/post.py --responder`.
 - **Tasas en todos los posts:** cada post termina con una línea fija armada en Python con el
   dólar BCV, el euro BCV y el USDT de Binance P2P de ese momento. Así el texto de la IA queda
   corto (máx. 320 caracteres, los posts cortos son los que más vistas tienen) y usa como mucho
@@ -156,7 +157,12 @@ python bot/post.py
   aparecen (BCV, USDT). Si defines `COTIZADOS_API_URL`, usa ese JSON en vez de la página (más
   rápido y estable). Si no logra leer cifras, publica igual pero sin números: nunca los inventa.
   El log de cada ejecución muestra el texto leído, para que verifiques que es correcto.
-- **Imágenes del post:** cada tema tiene varias vistas posibles de la web (tarjetas y resumen de
+- **Solo texto y sin enlace (desde el 8/11/2026):** los posts que más alcance tuvieron (35 a
+  69 mil vistas) fueron fotos reales publicadas a mano y sin enlace en los comentarios, donde la
+  gente preguntaba por la app; los del bot con capturas genéricas rindieron menos que los de solo
+  texto. Por eso el bot publica solo texto y no responde su propio post con el enlace. Para
+  volver atrás: `USAR_IMAGENES = True` o `LINK_EN_RESPUESTA = True` en `bot/post.py`.
+- **Imágenes del post (apagadas):** cada tema tiene varias vistas posibles de la web (tarjetas y resumen de
   `/cotizaciones`, gráficas anuales del dólar, euro, Binance y la brecha con distintos rangos,
   la calculadora, `/noticias` y `/mercado`; ver `VISTAS` y `"vistas"` en `TEMAS`). El bot prioriza
   las que no salieron en los últimos 6 posts y alterna modo claro y oscuro. Algunos temas
@@ -184,9 +190,8 @@ python bot/post.py
 - **Estadísticas:** antes de cada post el bot lee las vistas, likes y respuestas de los posts de
   los últimos 14 días y las guarda en el historial. `python bot/post.py --stats` muestra el
   rendimiento por formato y por medio (video, imagen o texto) sin publicar nada.
-- **Enlace en la respuesta:** el post principal sale sin enlace (Threads suele dar menos
-  alcance a los posts con enlaces externos) y justo después el bot responde a su propio post con
-  el enlace de la sección. El texto de esa respuesta es `"respuesta"` en cada tema de `TEMAS`.
+- **Enlace en la respuesta (apagado, ver `LINK_EN_RESPUESTA`):** el post principal sale sin
+  enlace y justo después el bot responde a su propio post con el enlace de la sección. El texto de esa respuesta es `"respuesta"` en cada tema de `TEMAS`.
 - **Token:** cada lunes el bot renueva el token de Threads (dura 60 días) y lo guarda solo en el
   secreto usando `GH_PAT`. Si falta `GH_PAT`, verás un aviso y tendrás que renovarlo a mano.
 - **Historial:** `data/history.json` guarda los últimos 150 posts con sus estadísticas; se

@@ -67,6 +67,7 @@ def load_dotenv(path: pathlib.Path) -> None:
 
 load_dotenv(ROOT / ".env")
 HISTORY_FILE = ROOT / "data" / "history.json"
+RESPONDIDOS_FILE = ROOT / "data" / "respondidos.json"
 IMAGE_FILE = ROOT / "public" / "tasas.png"
 VIDEO_FILE = ROOT / "public" / "video.mp4"
 SITE = "https://cotizados.vercel.app"
@@ -358,6 +359,12 @@ VISTAS = {
 # Los videos rindieron menos que las fotos: apagados. Con True vuelven a salir en los temas con
 # "videos", con la probabilidad de video_share.
 USAR_VIDEOS = False
+# Los posts virales de la cuenta (35-69 mil vistas) fueron fotos reales y sin enlace en los
+# comentarios; los del bot con capturas genéricas rindieron menos que los de solo texto. Así que
+# el bot publica solo texto y sin respuesta con enlace: quien pregunta por la app recibe la
+# respuesta de answer_app_questions. Con True vuelven las capturas o la respuesta con el enlace.
+USAR_IMAGENES = False
+LINK_EN_RESPUESTA = False
 
 # Videos cortos (10-15 s): grabaciones de pantalla de la app en tamaño de teléfono. Cada paso es
 # (acción, valor): "pausa" ms; "bajar"/"subir" píxeles con desplazamiento suave; "grafica" abre la
@@ -486,8 +493,9 @@ Prohibido (hace que todos los posts suenen iguales y la gente los ignora):
   cuentas…?", "¿Revisando…?").
 - Describir la imagen ("En la imagen ves…"). La imagen acompaña, no se explica.
 - Llamados a la acción de anuncio ("Pruébalo aquí abajo", "Te dejo el enlace", "Entra ya").
-  Si hace falta, como mucho una mención casual al final ("lo tengo en la app", "link abajo").
-- Hashtags y enlaces (el enlace se publica aparte, en una respuesta).
+  Si la app aparece, que sea de pasada y por su nombre, como algo que tú usas ("lo anoté en
+  Cotizados"). Nunca "link abajo" ni "en los comentarios": el post no lleva enlace.
+- Hashtags y enlaces.
 - Frases de relleno corporativas ("hacerte la vida más fácil", "sin complicaciones", "al vuelo").
 - Las palabras "paralelo", "dólar paralelo", "mercado paralelo", "dólar negro" o "mercado negro":
   están prohibidas en Venezuela. La tasa más alta se nombra siempre como USDT (Binance P2P), y
@@ -512,7 +520,9 @@ FRASES_PROHIBIDAS = [
     r"en la imagen",
     r"pru[eé]balo",
     r"aqu[ií] abajo",
-    r"te dejo el enlace",
+    r"te dejo el (enlace|link)",
+    r"(link|enlace) abajo",
+    r"en (los )?comentarios",
     r"^\W*¿sab[ií]as que",
     r"^\W*cansad[oa] de",
     r"hacerte la vida",
@@ -900,7 +910,7 @@ def plan_images(topic: dict, history: list) -> tuple[list[dict], str]:
     tiempo. Cada imagen es {"vista", "rango"} (el rango solo en gráficas). El modo (claro u
     oscuro) se alterna con el del post anterior, para que la misma vista no se vea igual."""
     estilo = "light" if (history[-1].get("estilo") if history else "dark") == "dark" else "dark"
-    if not topic["vistas"]:
+    if not topic["vistas"] or not USAR_IMAGENES:
         return [], estilo
 
     def last_use(v: str) -> int:
@@ -1469,30 +1479,43 @@ RESPUESTAS_APP = [
 ]
 
 
-def answer_app_questions(history: list, token: str) -> None:
-    """Responde los comentarios de los posts de los últimos 3 días que preguntan por la app. Los
-    ya respondidos se guardan en el post ("respondidos") para no contestar dos veces."""
+def answer_app_questions(token: str) -> None:
+    """Responde los comentarios que preguntan por la app en todos los posts de la cuenta de los
+    últimos 7 días, también los que el dueño publica a mano (ahí es donde más preguntan). Los ya
+    respondidos se guardan en RESPONDIDOS_FILE para no contestar dos veces."""
     try:
         yo = threads_request("GET", "/me", token, fields="username")["username"]
+        desde = int(time.time()) - 7 * 86400
+        posts = threads_request("GET", "/me/threads", token, fields="id", since=desde, limit=100)["data"]
     except Exception as e:  # noqa: BLE001
         log(f"Aviso: no se pudieron revisar los comentarios ({e}).")
         return
+    try:
+        hechos = json.loads(RESPONDIDOS_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        hechos = []
     respondidas = 0
-    for h in history:
-        if not h.get("post_id") or post_age_hours(h) > 72:
-            continue
+    for p in posts:
         try:
-            comentarios = threads_request("GET", f"/{h['post_id']}/replies", token,
+            comentarios = threads_request("GET", f"/{p['id']}/replies", token,
                                           fields="id,text,username").get("data", [])
         except Exception as e:  # noqa: BLE001
-            log(f"Aviso: no se pudieron leer los comentarios de {h['post_id']} ({e}).")
+            log(f"Aviso: no se pudieron leer los comentarios de {p['id']} ({e}).")
             continue
-        hechos = h.setdefault("respondidos", [])
         for c in comentarios:
             if c.get("username") == yo or c["id"] in hechos or not PREGUNTA_APP.search(c.get("text") or ""):
                 continue
             texto = random.choice(RESPUESTAS_APP)
             try:
+                # Si el dueño ya le contestó a mano, no se repite.
+                ya = threads_request("GET", f"/{c['id']}/replies", token, fields="username").get("data", [])
+                if any(r.get("username") == yo for r in ya):
+                    hechos.append(c["id"])
+                    respondidas += 1
+                    continue
+                if DRY_RUN:
+                    log(f"DRY_RUN: se respondería a @{c.get('username')} ({c.get('text')!r}).")
+                    continue
                 publish_to_threads(texto, token, reply_to_id=c["id"])
                 hechos.append(c["id"])
                 respondidas += 1
@@ -1500,8 +1523,7 @@ def answer_app_questions(history: list, token: str) -> None:
             except Exception as e:  # noqa: BLE001
                 log(f"Aviso: no se pudo responder a @{c.get('username')} ({e}).")
     if respondidas:
-        # Se guarda ya, por si el post de esta corrida falla: así no se responde dos veces.
-        save_history(history)
+        RESPONDIDOS_FILE.write_text(json.dumps(hechos[-500:], indent=0), encoding="utf-8")
 
 
 def maybe_refresh_token(token: str, first_post_today: bool) -> None:
@@ -1544,7 +1566,7 @@ def main() -> int:
     if token:
         update_stats(history, token)
         if not DRY_RUN:
-            answer_app_questions(history, token)
+            answer_app_questions(token)
     log(f"Rendimiento por formato (posts con más de 24 h):\n{stats_report(history)}")
     topic = pick_topic(history)
     noticia = None
@@ -1586,7 +1608,8 @@ def main() -> int:
     }[topic["datos"]]()
     text = generate_post(topic, history, data, shots, guion, rates, pie)
     log(f"Post generado ({len(text)} caracteres):\n{text}\n")
-    reply_text = topic["respuesta"].format(link=topic["link"]) if topic["respuesta"] else None
+    reply_text = topic["respuesta"].format(link=topic["link"]) \
+        if topic["respuesta"] and LINK_EN_RESPUESTA else None
     log(f"Respuesta con el enlace:\n{reply_text}\n" if reply_text else "Sin respuesta con enlace.")
     video = record_video(guion, estilo) if guion else None
     if not video:
@@ -1676,7 +1699,7 @@ def answer_only() -> int:
     if not token:
         log("Falta THREADS_ACCESS_TOKEN.")
         return 1
-    answer_app_questions(load_history(), token)
+    answer_app_questions(token)
     return 0
 
 
