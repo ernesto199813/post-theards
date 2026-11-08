@@ -1,6 +1,6 @@
 # Bot diario de Threads — Cotizados
 
-Publica **3 posts al día (8:47 a. m., 1:17 p. m. y 7:47 p. m., hora de Venezuela)** en Threads promocionando
+Publica **3 posts al día (8:47 a. m., 1:17 p. m. y 10:17 p. m., hora de Venezuela)** en Threads promocionando
 [cotizados.vercel.app](https://cotizados.vercel.app). El texto lo redacta Gemini en primera persona,
 como el creador de la app, rotando formatos narrativos (noticia rápida, ¿cuánto es?, mercado en
 desarrollo, cómo funciona, tus cuentas, detrás de cámaras, situación real, brecha, truco). Los formatos que
@@ -50,7 +50,7 @@ entre los dos comentarios).
 
 ## Calendario
 
-- **Horarios:** 8:47 a. m., 1:17 p. m. y 7:47 p. m. (Venezuela), en `HORARIOS` de
+- **Horarios:** 8:47 a. m., 1:17 p. m. y 10:17 p. m. (Venezuela), en `HORARIOS` de
   `bot/schedule.py`. El workflow está programado cada 30 minutos, pero GitHub solo dispara
   algunas ejecuciones (a veces con 5-6 horas entre una y otra). Por eso `bot/schedule.py`:
   - publica si hoy ya pasaron más horarios que posts publicados, así que se recuperan los
@@ -67,8 +67,8 @@ entre los dos comentarios).
   repite una noticia. La IA la explica con el medio como fuente. Al final, Python agrega un
   bloque fijo con el precio del barril de petróleo (Brent) y los metales (oro, plata, cobre) de
   Yahoo Finance con su variación en 24 horas, y las tasas BCV, euro y USDT. La IA no copia esas
-  cifras, así que siempre son exactas. Este post sale con el tema de Threads `Investing` (más
-  visitado que el de las tasas), sin respuesta ni enlaces: la IA cierra mencionando Cotizados en
+  cifras, así que siempre son exactas. Este post sale sin respuesta ni enlaces: la IA cierra
+  mencionando Cotizados en
   el propio texto, porque el enlace en los comentarios llegaba a menos gente. Si no hay noticia,
   sale otro formato.
 - **Respuestas a quien pregunta por la app:** en cada corrida el bot lee los comentarios de

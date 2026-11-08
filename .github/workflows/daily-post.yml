@@ -4,7 +4,7 @@ on:
   schedule:
     # Cada 30 minutos, aunque GitHub solo dispara algunas (a veces pasan 5-6 horas entre una y
     # otra). bot/schedule.py decide si toca publicar (horarios en HORARIOS: 8:47 a. m., 1:17 p. m.
-    # y 7:47 p. m. de Venezuela) y, si el próximo horario está cerca, espera hasta esa hora.
+    # y 10:17 p. m. de Venezuela) y, si el próximo horario está cerca, espera hasta esa hora.
     - cron: "17,47 * * * *"
   workflow_dispatch:
     inputs:

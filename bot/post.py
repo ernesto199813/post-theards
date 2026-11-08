@@ -25,7 +25,7 @@ Variables de entorno:
   GEMINI_API_KEY        (obligatoria) clave de Google AI Studio
   COTIZADOS_API_URL     (opcional)    endpoint JSON con las tasas (si no, se lee la página)
   GEMINI_MODEL          (opcional)    por defecto gemini-3.5-flash-lite
-  THREADS_TOPIC_TAG     (opcional)    tema de Threads de cada post, por defecto DólarBCV
+  THREADS_TOPIC_TAG     (opcional)    tema de Threads de cada post, por defecto Crypto
   DRY_RUN=true          (opcional)    genera el post pero no lo publica
   FORCE_REFRESH=true    (opcional)    fuerza la renovación del token
 
@@ -309,8 +309,6 @@ TEMAS = [
         "gancho": ("el hecho de la noticia contado como a un amigo, que ya diga qué pasó (sin "
                    "'según'); nada de frases genéricas tipo 'un conflicto puede encarecerlo todo'"),
         "menciona_app": True,
-        # Tema de Threads más visitado para noticias económicas que el de las tasas.
-        "tag": "Investing",
         "datos": "economia",
     },
 ]
@@ -422,7 +420,8 @@ CLAVES_NOTICIAS = {
 }
 
 # Tema de Threads (topic tag) con el que se etiqueta cada post; reemplaza a los hashtags del texto.
-TOPIC_TAG = os.getenv("THREADS_TOPIC_TAG") or "DólarBCV"
+# "Crypto": los dos posts con más vistas de la cuenta (69 y 35 mil) salieron con ese tema.
+TOPIC_TAG = os.getenv("THREADS_TOPIC_TAG") or "Crypto"
 # Métricas de cada post que se leen de la API de Threads (permiso threads_manage_insights).
 METRICAS = ["views", "likes", "replies", "reposts", "quotes", "shares"]
 

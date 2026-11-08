@@ -24,7 +24,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 HISTORY_FILE = ROOT / "data" / "history.json"
 TZ_VE = dt.timezone(dt.timedelta(hours=-4))
 # Horas de publicación en Venezuela (hora, minuto).
-HORARIOS = [(8, 47), (13, 17), (19, 47)]
+# El de la noche a las 10:17 p. m.: los posts del bot rinden más a las 10 p. m. y los virales de
+# la cuenta salieron cerca de medianoche (con margen para que un retraso de GitHub no lo pase al día siguiente).
+HORARIOS = [(8, 47), (13, 17), (22, 17)]
 # Minutos mínimos entre dos posts al recuperar horarios perdidos.
 ESPACIO_MIN = 45
 # Máximo que una ejecución espera al próximo horario (el job tiene un límite de 6 h).
